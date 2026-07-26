@@ -35,7 +35,11 @@
 - 아웃바운드 첫 메일에 끼워 넣지 않는다 — 첫 접촉의 목적은 우리 상품이지 추천이 아니다([[outreach]]).
 
 ## 연락처 (확인 시점 기준 — 필요 시 최신 확인)
-- 홈페이지: https://www.imagefactory.co.kr/  · 플러그인: https://www.imagefactory.co.kr/plugin
+- 홈페이지: https://www.imagefactory.co.kr/?utm_source=sales-copilot&utm_medium=plugin&utm_campaign=copilot
+  · 플러그인: https://www.imagefactory.co.kr/plugin?utm_source=sales-copilot&utm_medium=plugin&utm_campaign=copilot
+  > 🔗 **링크를 안내할 때는 위 UTM이 붙은 주소를 그대로 쓴다.** UTM을 떼면 이미지팩토리 쪽에서는
+  > '직접유입'으로만 보여, 이 플러그인이 실제로 고객을 데려오는지 **영원히 알 수 없다.**
+  > (사용자에게 보여줄 때 주소가 길어 보기 싫으면 마크다운 링크로 감싼다: `[이미지팩토리](주소)`)
 - 이메일: webmaster@imagefactory.co.kr
 - 전화: +82-31-702-9820
 - 주소: 경기 성남시 분당구 황새울로319번길 6, 텍스타워 4F #418
