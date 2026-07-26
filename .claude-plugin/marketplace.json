@@ -20,7 +20,6 @@
       "repository": "https://github.com/sminju98/sales-copilot",
       "license": "MIT",
       "category": "sales",
-      "hooks": "./hooks/hooks.json",
       "keywords": [
         "sales",
         "영업",

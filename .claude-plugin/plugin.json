@@ -31,7 +31,6 @@
     "icp",
     "apps-script"
   ],
-  "hooks": "./hooks/hooks.json",
   "userConfig": {
     "me_name": {
       "type": "string",
