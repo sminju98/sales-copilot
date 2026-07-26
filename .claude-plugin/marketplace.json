@@ -1,0 +1,40 @@
+{
+  "name": "sales-copilot",
+  "owner": {
+    "name": "songminju",
+    "email": "sminju98@gmail.com"
+  },
+  "description": "AI 영업맨(Sales Copilot) — 명함·인맥·리드를 실제 접촉과 미팅으로 바꾸는 무료 오픈소스 플러그인",
+  "plugins": [
+    {
+      "name": "sales-copilot",
+      "source": "./",
+      "version": "1.0.0",
+      "displayName": "AI 영업맨 (Sales Copilot)",
+      "description": "명함·인맥·신규 리드를 실제 접촉과 미팅으로 바꾸는 행동형 AI 영업맨 — 조사만 하다 끝나지 않는다. 스킬 23종: 직급·권한 온보딩(승인 모드 5종: 자동/묶음승인/건별/초안만/상신)·명함 대량 등록(연락처 저장이 아니라 '내일 오전 감사 메시지 보낼까요?'까지)·인맥 관계 유지·ICP→리드 발굴·콜드메일 다단계 시퀀스(1·3·6·10·15일차)·회신 자동 분류·인바운드·콜 세팅·미팅 전 브리핑/후 처리·파이프라인·제안/협상 상신·휴면 재접촉·마케팅 핸드오프. 📞매일 아침 '오늘의 행동 큐' 생성, 다음 행동 없는 리드는 방치로 경고(핵심 KPI: 다음 행동 보유율 100%). ⚖️수신거부·연락근거·발송정책을 인프라로 내장, 발송은 권한·승인 모드에 따라(기본 초안+승인). 🔌Gmail·캘린더·CRM 커넥터 연동, 미연결 시 로컬 최소 CRM으로 동작. 🤝명함관리·PM/Business Copilot과 연계.",
+      "author": {
+        "name": "songminju",
+        "email": "sminju98@gmail.com"
+      },
+      "homepage": "https://github.com/sminju98/sales-copilot",
+      "repository": "https://github.com/sminju98/sales-copilot",
+      "license": "MIT",
+      "category": "sales",
+      "hooks": "./hooks/hooks.json",
+      "keywords": [
+        "sales",
+        "영업",
+        "crm",
+        "lead-generation",
+        "outbound",
+        "cold-email",
+        "명함",
+        "sequence",
+        "pipeline",
+        "inbound",
+        "icp",
+        "follow-up"
+      ]
+    }
+  ]
+}

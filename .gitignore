@@ -1,0 +1,9 @@
+__pycache__/
+*.pyc
+data/briefs/
+data/queue/
+data/worklog/
+data/_*
+data/*.md
+.DS_Store
+config.json

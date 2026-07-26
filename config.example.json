@@ -1,0 +1,90 @@
+{
+  "me": {
+    "name": "홍길동",
+    "rank": "rep",
+    "title": "영업팀원 (AE)",
+    "functions": [],
+    "sell_what": "무엇을 누구에게 파는지 한 줄 (예: 중소 이커머스에 AI 광고 소재 구독)",
+    "accounts_scope": "assigned",
+    "info_scope": "own",
+    "send_scope": [
+      "find_leads",
+      "register_contacts",
+      "draft_email",
+      "propose_meeting"
+    ],
+    "approval_mode": "per_item",
+    "send_as": "self",
+    "sender_email": "",
+    "signature": "",
+    "escalate_rules": [
+      "예상 계약금액 3천만원 이상",
+      "대기업·투자사·전략적 파트너",
+      "할인율 10% 초과",
+      "계약조건 변경",
+      "부정적 이슈 발생"
+    ],
+    "personal_contacts_policy": "selected",
+    "reports_to": "",
+    "timezone": "Asia/Seoul"
+  },
+  "company": {
+    "name": "우리 회사",
+    "one_liner": "무엇을, 누구에게, 왜 좋은지 한 줄 소개",
+    "products": "판매 상품·서비스 요약",
+    "icp_summary": "적합 고객 조건 요약 (자세한 건 context/icp.md)"
+  },
+  "cadence": {
+    "sequence_days": [1, 3, 6, 10, 15],
+    "max_touches": 5,
+    "daily_new_touches": 10,
+    "daily_followups": 10,
+    "stale_days": 21
+  },
+  "policy": {
+    "country": "KR",
+    "consent_required_default": true,
+    "quiet_hours": "21:00-08:00"
+  },
+  "sources": {
+    "use_web": true,
+    "use_email": false,
+    "use_calendar": false,
+    "use_crm": false,
+    "cards_inbox": ""
+  },
+  "delivery": {
+    "team": {
+      "enabled": false,
+      "slack_channel": "",
+      "slack_webhook": ""
+    },
+    "private": {
+      "enabled": true,
+      "slack_channel": "",
+      "slack_webhook": ""
+    }
+  },
+  "brief": {
+    "morning_schedule": "0 8 * * 1-5",
+    "evening_schedule": "0 17 * * 1-5",
+    "weekly_schedule": "0 9 * * 5",
+    "language": "ko",
+    "routine_enabled": false
+  },
+  "proactive": {
+    "enabled": true,
+    "prompt_nudge": true,
+    "review_on_save": true,
+    "end_check": true
+  },
+  "links": {
+    "myeongham_home": "~/.myeongham",
+    "business_copilot_home": "~/.business-copilot",
+    "pm_copilot_home": "~/.pm-copilot",
+    "use_business_context": true
+  },
+  "setup": {
+    "completed": false
+  }
+}
