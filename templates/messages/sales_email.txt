@@ -1,0 +1,15 @@
+{name}님, 안녕하세요.
+
+{me_company} {me_name}입니다.
+말씀 나눈 내용과 맞닿아 있어, 저희 소개 자료를 먼저 보내드립니다.
+
+▷ 자료 보기: {me_sales_material_url}
+
+보시고 저희가 도움될 지점이 있다면, 20~30분 짧게 이야기 나누고 싶습니다.
+편하신 시간 두어 개 회신 주시면 제가 맞추겠습니다.
+
+감사합니다.
+
+{me_name}
+{me_company} {me_title}
+{me_phone} · {me_email}

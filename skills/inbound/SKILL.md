@@ -16,6 +16,7 @@ description: 인바운드 문의를 감지해 기존기록·적합도·긴급도
 python3 "$CLAUDE_PLUGIN_ROOT/scripts/doctor.py"
 ```
 - **문의 소스**: Gmail·폼·CRM 커넥터가 연결돼 있으면 미답변 신규 문의(홈페이지·메일·폼·소개)를 우선 조회한다. 미연결이면 사용자가 붙여넣은 문의 본문·포워딩 메일로 동작하고 로컬 CRM(`~/.sales-copilot/`)에 기록한다 (INB-01).
+- **전화 문의**: vox.ai 인바운드 연동 시 대표번호·발급번호로 걸려온 전화는 AI 에이전트가 응대·자격질문(INB-10)·미팅 예약(INB-11)까지 하고, **통화 후 분석 웹훅의 요약·추출값이 이 스킬의 문의 본문**이 된다 — 연동·응대 플로우·핸드오프 기준은 [[phone-call]].
 - 경계: **우리가 보낸 아웃바운드에 대한 회신이면 이 스킬이 아니라 [[classify-reply]]**. 처음 들어온 문의만 여기서 처리한다.
 - `context/`의 products·pricing·icp·objections·message-style을 로드해 답변 근거로 쓴다. 컨텍스트가 비어 있으면 답변에 넣을 사실이 없다 — 아는 것만 답하고 나머지는 확인 후 회신으로 돌린다.
 
@@ -43,7 +44,7 @@ python3 "$CLAUDE_PLUGIN_ROOT/scripts/crm.py" suppress-check --email "<문의자 
 ## 5. 즉시 첫 답변 초안 — 불완전해도 먼저 응답한다 (INB-09·INB-10·INB-11·INB-13)
 - **초안 구조** (INB-09): 문의 인지·감사 → 문의 요지 재확인 → 지금 답할 수 있는 것 즉답(context 근거) → 자격확인 질문 → 다음 스텝 제안. `message-style.md` 문체를 따른다.
 - **자격확인 질문** (INB-10): 용도·규모·희망 일정·예산·의사결정 구조 중 **본문에 빠진 것만 2~3개**. 심문이 아니라 대화가 되게.
-- **콜 연결** (INB-11): 적합도가 높으면 콜 시간 후보나 예약 링크를 첫 답변에 바로 포함 — 세팅·초대장은 [[book-call]]로.
+- **콜 연결** (INB-11): 적합도가 높으면 콜 시간 후보나 예약 링크를 첫 답변에 바로 포함 — 세팅·초대장은 [[book-call]]로. 전화로 온 문의는 콜백도 전화가 자연스럽다 — AI 콜백은 [[phone-call]](vox 연동 시), 가격·계약 얘기가 나올 문의면 처음부터 사람이 건다.
 - **불완전 문의** (INB-13): 정보가 부족하거나 답을 모르는 항목이 있어도 "확인 후 회신드리겠다"로 **먼저 응답하고 추가정보를 요청**한다. 완벽한 답변을 기다리며 하루를 넘기지 않는다.
 
 ## 6. 발송 게이트 → 기록 (대외 발송 필수 절차)
@@ -78,4 +79,4 @@ python3 "$CLAUDE_PLUGIN_ROOT/scripts/crm.py" add activity --json '{"type":"email
 - **중단 조건**: 명시적 수신거부 / 스팸·사실상 무관 / 반송·잘못된 연락처 → 즉시 종결 + `crm.py suppress add` 반영. 그 외 무응답은 각도·시점을 바꿔 재접촉.
 - **이중 경로**: Gmail·캘린더·CRM 커넥터가 있으면 그것을 우선 사용, 없으면 로컬 최소 CRM(`~/.sales-copilot/`)으로 동일하게 동작한다.
 
-관련: [[classify-reply]] · [[book-call]] · [[today]] · [[relationships]] · [[role]] · [[method]]
+관련: [[classify-reply]] · [[book-call]] · [[phone-call]] · [[today]] · [[relationships]] · [[role]] · [[method]]

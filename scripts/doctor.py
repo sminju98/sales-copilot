@@ -2,7 +2,8 @@
 """설정·데이터 점검: AI 영업맨을 돌리기 위해 아직 채워야 할 것을 ✅/⚠️ 로 보여준다.
 
 config 필수키 → approval_mode → 영업 컨텍스트 8종 → 로컬 CRM 레코드 → 수신거부 목록
-→ 다음 행동 보유율(핵심 KPI) → 전달 채널 → 파이썬 버전 순서로 훑는다.
+→ 다음 행동 보유율(핵심 KPI) → 전달 채널 → 내장 엔진 6종(cards/sms/email_send/coldmail/
+vox/team — 전부 선택, 미설정은 ℹ️ 안내만) → Apps Script 폴더 2종 → 파이썬 버전 순서로 훑는다.
 
   python3 scripts/doctor.py
 """
@@ -182,7 +183,41 @@ def main():
             else:
                 print(f"  ℹ️  전달 채널({label}): 켜져 있는데 웹훅 없음 — 채팅 미리보기는 됩니다(전송하려면 연결).")
 
-    # 8) 파이썬 버전
+    # 8) 내장 엔진 6종 — 전부 선택 사항. 미설정은 ⚠️ 가 아니라 ℹ️(기능 안내)로만 표시하고
+    #    ready 판정에 영향을 주지 않는다(핵심 영업 루프는 엔진 없이도 동작).
+    cards, sms = cfg.get("cards", {}), cfg.get("sms", {})
+    email_send, cold = cfg.get("email_send", {}), cfg.get("coldmail", {})
+    vox, team = cfg.get("vox", {}), cfg.get("team", {})
+    engines = [
+        ("명함 시트(cards)", bool(cards.get("sheet_webhook_url")),
+         "스캔·CRM 등록은 지금도 동작. 구글시트 백업은 apps-script/cards 배포 후 "
+         "cards.sheet_webhook_url 연결"),
+        ("문자(sms)", bool(sms.get("api_key") and sms.get("sender")),
+         "solapi 키·발신번호(sms.api_key/api_secret/sender)를 넣으면 문자 발송"),
+        ("메일 발송(email_send)", bool(email_send.get("username") and email_send.get("app_password")),
+         "Gmail 앱 비밀번호(email_send.username/app_password)를 넣으면 개별 메일 실발송"),
+        ("콜드메일 대장(coldmail)", bool(cold.get("sheet_webhook_url")),
+         "apps-script/coldmail 배포 후 coldmail.sheet_webhook_url 연결. "
+         "발송은 dispatchTick 전담, 외부 행 기본 PAUSED"),
+        ("전화(vox)", bool(vox.get("enabled") and vox.get("api_key")),
+         "TryVox API 키(vox.api_key)를 넣으면 아웃바운드·인바운드 콜(/phone-call)"),
+        ("팀 관리(team)", bool(team.get("members")),
+         "team.members·watch_channels 를 넣으면 팀 현황·리드 배정(/team)"),
+    ]
+    for label, ok, guide in engines:
+        print(f"  {'✅' if ok else 'ℹ️ '} {label}: " + ("설정됨" if ok else f"미설정(선택) — {guide}"))
+
+    # 9) Apps Script 폴더 2종 — 플러그인 패키지에 동봉되는 배포 원본(cards/coldmail).
+    #    없으면 설치가 불완전한 것(웹훅 배포를 진행할 수 없음). ready 판정에는 미반영.
+    for sub, what in (("cards", "명함 구글시트 웹훅"), ("coldmail", "콜드메일 대장·dispatchTick 발송")):
+        d = os.path.join(ROOT, "apps-script", sub)
+        if os.path.isdir(d):
+            print(f"  ✅ Apps Script({sub}): 동봉됨 — {what} 배포 원본 ({d})")
+        else:
+            print(f"  ⚠️  Apps Script({sub}) 폴더 없음 — {what} 배포 원본이 빠졌습니다. "
+                  "플러그인 재설치를 권장합니다.")
+
+    # 10) 파이썬 버전
     v = sys.version_info
     if (v.major, v.minor) >= (3, 9):
         print(f"  ✅ 파이썬: {v.major}.{v.minor}.{v.micro}")

@@ -19,6 +19,7 @@ python3 "$CLAUDE_PLUGIN_ROOT/scripts/crm.py" list opportunity --where account_id
 cat "${SALES_COPILOT_HOME:-$HOME/.sales-copilot}/context/"{pricing,cases,objections,permissions}.md 2>/dev/null || echo "(컨텍스트 없음 — [[context]] 먼저)"
 ```
 - 미팅 일시·참석자는 **캘린더 커넥터 연결 시 초대장에서**, 미연결 시 사용자에게 확인. 어떤 미팅인지(소개/데모/협상)는 [[book-call]]이 잡을 때 기록한 유형을 따른다.
+- 커넥터 활용: 캘린더(초대장·일정) 외에 깃허브 연결 시 상대 조직·우리 제품의 공개 릴리스 같은 기술 신호를, 노션 연결 시 이 계정 관련 과거 회의록·영업 위키를 함께 읽는다. 미연결이면 CRM 기록·웹 공개 정보만으로 만든다.
 - CRM에 회사가 없으면 지어내지 말고 "기록 없음 — 첫 미팅" 으로 시작한다.
 
 ## 1. 상대를 파악한다 (PRE-01~04)
@@ -51,7 +52,7 @@ python3 "$CLAUDE_PLUGIN_ROOT/scripts/save_brief.py" --kind meeting
 
 ## 출력 (1페이지 고정)
 ```
-📞 미팅 브리핑 · {회사} · {일시·유형}
+📞 {일시} {회사} {유형} 미팅 — 브리핑 준비해 뒀습니다 · 접촉 {N}회째 · 목표 {1~2개}
 ■ 회사: {3줄 요약} | 최근: {뉴스 1~2건 (출처)}
 ■ 이력: {첫 접점}→{최근} 총 {N}회 · ⚠️ 미이행 약속: {있으면}
 ■ 참석자: {이름·직책 — 결재권/영향자/실무 · 주목할 점 / "확인 필요"}

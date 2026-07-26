@@ -17,7 +17,7 @@ python3 "$CLAUDE_PLUGIN_ROOT/scripts/crm.py" find contact "<이름 또는 회사
 python3 "$CLAUDE_PLUGIN_ROOT/scripts/crm.py" list activity --where contact_id=<id> --limit 10
 cat "${SALES_COPILOT_HOME:-$HOME/.sales-copilot}/config.json" 2>/dev/null   # approval_mode·send_scope·escalate_rules
 ```
-- 어디서 온 콜 요청인지 확인한다: [[classify-reply]]의 긍정 분기, [[inbound]]의 콜 연결, 또는 [[today]] 큐. 연결된 리드·영업기회 레코드를 같이 연다. 이력이 없으면 지어내지 말고 사용자에게 맥락을 한 번 묻는다.
+- 어디서 온 콜 요청인지 확인한다: [[classify-reply]]의 긍정 분기, [[inbound]]의 콜 연결, 또는 [[today]] 큐. 연결된 리드·영업기회 레코드를 같이 연다. 이력이 없으면 지어내지 말고 **있는 정보로 유형 판정·후보 산출까지 먼저 해놓은 뒤** 빠진 맥락만 사용자에게 확인한다.
 
 ## 1. 미팅 유형·참석자·호스트 판정
 - 직전 대화 내용으로 필요한 미팅 유형을 판단하고(CALL-01), **소개콜(15분)/상담/데모/제휴/기술미팅**으로 구분한다(CALL-02) — 유형이 길이·참석자·준비물을 결정한다.
@@ -46,10 +46,11 @@ python3 "$CLAUDE_PLUGIN_ROOT/scripts/crm.py" add activity --json '{"type":"meeti
 python3 "$CLAUDE_PLUGIN_ROOT/scripts/crm.py" update lead <id> --json '{"status":"call_booked","next_action":"미팅 전 브리핑 확인","next_action_date":"<미팅 전날>"}'
 ```
 - 일정을 회사·연락처·영업기회 레코드에 연결한다(CALL-13). 다음 행동은 [[prepare-meeting]] 브리핑으로 이어지게 세팅 — **콜만 잡고 끝나는 리드는 없다.**
+- 노쇼가 잦은 유형(첫 미팅·장기 리드)은 미팅 전날 **확정 리마인드**를 건다 — 메일 또는 AI 리마인드 콜([[phone-call]], vox 연동 시). 발송 게이트 동일.
 
 ## 6. 취소·변경·노쇼
 - 취소·변경 회신을 감지하면 즉시 새 후보 2~3개를 제안하고 초대를 갱신한다(CALL-14). 취소를 거절로 단정하지 않는다.
-- 노쇼는 24시간 안에 **비난 없는 재예약 메시지**를 발송한다(CALL-15) — 발송 게이트 동일 적용. 2회 연속 노쇼면 리드 온도를 낮추고 재접촉일을 뒤로 조정한다.
+- 노쇼는 24시간 안에 **비난 없는 재예약 메시지**를 발송한다(CALL-15) — 발송 게이트 동일 적용. 메일이 안 닿는 상대는 AI 재예약 콜([[phone-call]], vox 연동 시)로 바꿔 부딪힌다. 2회 연속 노쇼면 리드 온도를 낮추고 재접촉일을 뒤로 조정한다.
 
 ## 출력
 ```
@@ -67,4 +68,4 @@ python3 "$CLAUDE_PLUGIN_ROOT/scripts/crm.py" update lead <id> --json '{"status":
 - **권한 인식**: 일정 확정·발송은 send_scope 경계 안에서만, 범위 밖은 [E] 상신. 임원 참석은 요청까지만, 수락은 본인이. 자세히 [[role]].
 - **중단 조건**: 명시적 수신거부 / 명확한 거절·재접촉 금지 / 반송·잘못된 연락처 / 사실상 무관한 대상 / 최대 접촉횟수(기본 5회) 도달 / 법·채널 정책상 불가 → 즉시 중단 + `crm.py suppress add --email <e>` 반영. 그 외 무응답 재예약 제안은 각도·시점을 바꿔 최대 2회까지만.
 
-관련: [[classify-reply]] · [[inbound]] · [[prepare-meeting]] · [[today]] · [[method]]
+관련: [[classify-reply]] · [[inbound]] · [[phone-call]] · [[prepare-meeting]] · [[today]] · [[method]]

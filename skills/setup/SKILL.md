@@ -1,6 +1,6 @@
 ---
 name: setup
-description: AI 영업맨 첫 설정 — 직급·직책·실제 권한 온보딩. 질문 11개로 발송·일정·가격·계약 권한과 승인 모드(5종)를 정해 config와 permissions.md에 기록한다. "영업맨 설정 / 셋업 / 처음 사용 / 설정 계속 / 권한 변경 / 승인 모드 바꿔줘" 또는 첫 설치 시 클로드가 먼저 제안.
+description: AI 영업맨 첫 설정 — 직급·직책·실제 권한 온보딩. 질문 11개로 발송·일정·가격·계약 권한과 승인 모드(5종)를 정해 config와 permissions.md에 기록하고, 내장 엔진 6종(명함 시트·문자·메일 발신·콜드메일 대장·Vox 전화·팀)은 선택으로 연결하며, 마지막에 아침·저녁·주간 루틴을 묻지 않고 기본 등록한다. "영업맨 설정 / 셋업 / 처음 사용 / 설정 계속 / 권한 변경 / 승인 모드 바꿔줘" 또는 첫 설치 시 클로드가 먼저 제안.
 ---
 
 > **영업 루프(항상):** 오늘 연락할 사람 → 접촉 → 회신 처리 → 콜 → 미팅 → 다음 행동 갱신. 모든 리드에 다음 행동. 자세히 [[method]].
@@ -74,7 +74,7 @@ python3 "$CLAUDE_PLUGIN_ROOT/scripts/set_config.py" me.escalate_rules="예상 �
 ## 7. [A] 규칙 생성 — permissions.md·상급자 연결·브리핑 구성 (SET-12·13·14)
 - 답변을 요약해 **`~/.sales-copilot/context/permissions.md`를 네가 대신 작성한다**(SET-12): ①직접 할 수 있는 것 ②승인 필요한 것 ③상신 대상과 기준 ④개인 인맥 정책. 모든 발송 스킬이 발송 게이트에서 이 파일과 config를 읽는다.
 - 상신[E]이 갈 곳: `me.reports_to`에 상급자·승인자·대체 담당자를 연결한다(SET-14). 비어 있으면 상신 시마다 물어야 하니 지금 받아 둔다.
-- 자격별 브리핑·오늘 큐 구성(SET-13)은 [[role]] 규칙대로 자동 적용되고, 아침 8시 큐·저녁 5시 마감 루틴 등록은 [[routine]]에서 이어서 한다.
+- 자격별 브리핑·오늘 큐 구성(SET-13)은 [[role]] 규칙대로 자동 적용되고, 아침 8시 큐·저녁 5시 마감·주간 리포트 루틴은 §10에서 **묻지 않고 기본으로 건다**.
 ```bash
 python3 "$CLAUDE_PLUGIN_ROOT/scripts/set_config.py" me.reports_to="김본부장" me.timezone="Asia/Seoul"
 ```
@@ -86,7 +86,37 @@ python3 "$CLAUDE_PLUGIN_ROOT/scripts/set_config.py" sources.use_email=true sourc
 ```
 - **미연결이어도 막지 않는다.** 로컬 최소 CRM(`~/.sales-copilot/crm/` JSONL)이 자동 생성되어 `crm.py`로 전부 동작하고, 커넥터가 붙으면 그쪽 실측 데이터를 우선한다.
 
-## 9. 마무리 — 검증 후 완료 처리
+## 9. 내장 엔진 6종 연결 — 전부 선택, 안 붙여도 나머지는 전부 동작
+여기서부터는 답을 안 해도 된다("나중에"면 그대로 넘어간다). 미설정은 막힘이 아니라 안내다 — 그 기능을 쓰려는 순간 해당 스킬이 무엇이 빠졌는지 다시 짚어준다.
+
+| 엔진 | config 키 | 쓰는 곳 |
+|---|---|---|
+| 명함 시트 | `cards.sheet_webhook_url`(+`sheet_webhook_secret`)·`cards.vcard_dir` | [[import-cards]] — 구글시트 백업·리멤버 vCard. `apps-script/cards` 배포 후 |
+| 문자 발송 | `sms.api_key`·`sms.api_secret`·`sms.sender` | solapi — 명함 인사·안부 문자 실발송 (등록된 발신번호 필수) |
+| 메일 발신 | `email_send.username`·`email_send.app_password` | Gmail 앱 비밀번호 — 개별·소량 메일 실발송(`send_email.py`) |
+| 콜드메일 대장 | `coldmail.sheet_webhook_url` | [[outreach]] 대량 발송 — `apps-script/coldmail` 배포 후. 발송은 dispatchTick 전담, 외부 행 기본 PAUSED |
+| Vox 전화 | `vox.api_key`·`vox.phone_number` | [[phone-call]] — TryVox 아웃바운드·인바운드 AI 콜 |
+| 팀 | `team.members`·`team.watch_channels` | [[team]] — 팀장·임원용 팀 현황·리드 배정 |
+
+```bash
+python3 "$CLAUDE_PLUGIN_ROOT/scripts/set_config.py" cards.vcard_dir="~/명함" sms.sender="0212345678" email_send.username="me@gmail.com"
+```
+- 시크릿(웹훅 secret·API 키·앱 비밀번호)은 사용자가 직접 값을 줄 때만 저장하고 **화면 출력에 되풀이하지 않는다.** 한 번에 채우려면 `quicksetup.py`의 선택 플래그(`--cards-sheet-webhook`·`--sms-key`·`--smtp-user`·`--coldmail-sheet-webhook`·`--vox-key`·`--team-members` 등)를 쓴다.
+
+## 10. [A] 루틴 등록 — 묻지 않고 기본으로 건다 (SET-13·§7)
+설정 저장이 끝나면 **아침 8시 큐 · 저녁 5시 마감 · 금요일 주간 리포트 3종을 바로 등록한다.** "등록할까요?"라고 묻지 않는다 — 루틴은 옵션이 아니라 이 플러그인의 뼈대고, 사용자가 명시적으로 거부할 때만 생략한다(`quicksetup.py`도 `--no-routine`일 때만 건너뛴다).
+1. **스케줄 도구가 있으면**(scheduled-tasks·클라우드 루틴·`/schedule`) 그 도구로 3종을 즉시 등록한다. 크론식은 config `brief.morning_schedule`(기본 `0 8 * * 1-5`)·`evening_schedule`(`0 17 * * 1-5`)·`weekly_schedule`(`0 9 * * 5`), 예약 프롬프트는 `schedule_brief.py` 출력을 그대로 쓴다.
+2. **없으면** 레시피(크론식+프롬프트+crontab 경로)를 제시한다:
+```bash
+python3 "$CLAUDE_PLUGIN_ROOT/scripts/schedule_brief.py" --kind morning   # evening·weekly 동일
+```
+3. 등록이 확인되면(도구 등록 완료 또는 사용자의 "예약 완료") 상태를 기록한다:
+```bash
+python3 "$CLAUDE_PLUGIN_ROOT/scripts/set_config.py" brief.routine_enabled=true
+```
+- 등록 방법 우선순위·확인·수정·해제의 본체는 [[routine]] — 여기서는 기본 3종을 걸어 놓고 "등록해놨습니다" 한 줄로 통보한다. 미등록으로 끝나면 훅이 다음 세션에서 다시 들이민다.
+
+## 11. 마무리 — 검증 후 완료 처리
 ```bash
 python3 "$CLAUDE_PLUGIN_ROOT/scripts/set_config.py" setup.completed=true
 python3 "$CLAUDE_PLUGIN_ROOT/scripts/doctor.py"
@@ -94,17 +124,20 @@ python3 "$CLAUDE_PLUGIN_ROOT/scripts/doctor.py"
 
 ## 출력 (설정 요약 — 마지막에 반드시 보여준다)
 ```
-📞 설정 완료 — {이름} · {자격/직책}
+📞 설정 완료 — {이름} · {자격/직책}. 내일 아침 8시부터 큐가 알아서 옵니다.
 판매: {sell_what}
 범위: 계정 {accounts_scope} · 열람 {info_scope}
 직접 실행: {send_scope 요약} — 이 밖은 전부 [E] 상신 → {reports_to}
 승인 모드: {approval_mode} · 발신: {send_as}
 상신 기준: {escalate_rules 요약} · 개인 인맥: {personal_contacts_policy}
 커넥터: Gmail {✓/✗} · 캘린더 {✓/✗} · CRM {✓/✗ → 로컬 CRM으로 동작}
+내장 엔진: 명함 {✓/－} · 문자 {✓/－} · 메일 {✓/－} · 콜드메일 {✓/－} · 전화 {✓/－} · 팀 {✓/－} (－는 나중에 연결)
+루틴: 아침 8시 · 저녁 5시 · 금요일 주간 — {등록해놨습니다 / 레시피 전달됨(등록 확인 대기)}
 다음: 명함 사진이 있으면 "명함 등록", 아니면 "오늘 뭐부터?" → [[today]]가 오늘의 행동 큐를 만든다
 ```
 
 ## 원칙
+- **묻는 건 설정 질문 11개([H])와 발송 게이트뿐이다.** 저장·permissions.md 작성·루틴 등록 같은 내부 작업은 "할까요?" 없이 실행하고 "~해놨습니다. 확인만 해주세요" 한 줄로 통보한다.
 - **환각 금지.** 답하지 않은 항목을 임의로 채우지 않는다 — 빈 값은 안전 기본(건별 승인·본인 열람)으로 두고, 무엇이 비었는지는 `doctor.py`가 짚는다.
 - **자동 발송을 기본값처럼 만들지 않는다.** `auto`는 사용자가 명시적으로 골랐을 때만. 기본은 초안+승인.
 - **데이터 경계**: 개인 인맥·가격 하한·할인 한도는 비공개(`context/_policy.md`) — 팀 채널·웹 검색어로 내보내지 않는다. `personal_contacts_policy=private`인 연락처는 어떤 출력에도 노출 금지(SET-10·REL-17 연동).

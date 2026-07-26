@@ -27,7 +27,7 @@ python3 "$CLAUDE_PLUGIN_ROOT/scripts/crm.py" list relationship --limit 30
 - **민감 관계는 비공개 [H]** (REL-17): config `me.personal_contacts_policy`가 `private`/`signal_only`면 해당 관계는 자동 연락 금지, `crm.py update relationship <id> --json '{"visibility":"private"}'`로 표식. 팀 공유·브리핑에서 제외.
 
 ## 2. 식은 관계·연락 명분 탐지 (REL-04·05·06·07·10)
-- **장기 미접촉 감지** (REL-04): 중요도별 정상 주기(상: 1개월 / 중: 분기 / 하: 반기, config로 조정)를 넘긴 관계만 뽑는다.
+- **장기 미접촉 감지** (REL-04): 중요도별 정상 주기(상: 1개월 / 중: 분기 / 하: 반기, config로 조정)를 넘긴 관계만 뽑는다. 명함 연락처의 기계적 주기 초과분은 `followup_send.py --dry-run`이 한 번에 뽑아준다(실행은 4단계 게이트).
 - 그 대상만 상대 회사의 최근 변화를 조사한다 (REL-05) — **조사는 인당 몇 분이면 끝**, 조사만 하고 연락 안 하는 것 금지.
 - **연락 명분 탐지** (REL-06): 승진·이직·투자 유치·신제품 출시·수상·채용 확대. 출처를 함께 기록한다.
 - 과거 대화와 현재 명분을 연결한다 (REL-07): "그때 말씀하신 ○○가 이번 △△와 닿아서" — 연결고리 없으면 담백한 안부로.
@@ -38,9 +38,17 @@ python3 "$CLAUDE_PLUGIN_ROOT/scripts/crm.py" list relationship --limit 30
 - **먼저 제공할 도움 제안** (REL-11): 상대에게 유용한 정보·자료·피드백을 메시지에 얹는다 — 팔기 전에 준다.
 - **소개 연결** (REL-12): 내 인맥끼리 서로 도움될 조합을 찾아 양쪽 동의 전제의 소개 제안을 만든다. 소개 경로는 [[find-leads]]의 따뜻한 진입로가 된다.
 
-## 4. 발송 게이트 → 발송·빈도 조정 (REL-09·16)
+## 4. 발송 게이트 → 실제 발송·빈도 조정 (REL-09·16)
 발송 전 반드시: ① `crm.py suppress-check --email <e>` 수신거부·중복 검사 → ② 사실 오류 검사(이름·회사·직책·명분 출처) → ③ `approval_mode` 적용. **DRAFT ONLY거나 미설정이면 절대 자동 발송 금지.** 신입·외부·타부서는 상신·소개요청까지만 (자세히 [[role]]). 국가·채널 규칙은 [[send-policy]].
-- 발송/승인 후 `crm.py add activity --json '...'`로 기록하고 관계에 **다음 연락일**을 반드시 설정 (REL-09 [P/A]).
+```bash
+python3 "$CLAUDE_PLUGIN_ROOT/scripts/crm.py" suppress-check --email <e>
+python3 "$CLAUDE_PLUGIN_ROOT/scripts/send_email.py" --to <e> --subject "..." --body-file draft.txt --dry-run   # 개별 발송 미리보기 → 승인 후 --dry-run 제거
+python3 "$CLAUDE_PLUGIN_ROOT/scripts/send_sms.py" --to 010-0000-0000 --text "..." --dry-run
+python3 "$CLAUDE_PLUGIN_ROOT/scripts/followup_send.py" --dry-run   # 주기 안부 일괄: 대상·문안 확인 → 승인 후 --dry-run 제거해 실발송
+```
+- **실행 수단은 내장 스크립트다** (REL-09 [P/A]): 개별 안부·축하는 `send_email.py`/`send_sms.py`(수신거부·야간 게이트 내장), 주기 안부 일괄은 `followup_send.py`(config `followup` 블록: interval_days·max_followups·channel — 실발송 성공 건만 `followups_sent`·`last_contact_at` 자동 갱신). 문안 베이스는 `templates/messages/`(greeting/sales/followup × sms/email). 초안·dry-run까지는 묻지 말고 만들어 두고, **질문은 "발송할까요?" 하나만**.
+- SMTP·솔라피 미설정이면 초안·미리보기까지 해놓고 설정 경로(`set_config.py email_send.* / sms.*`) 한 줄만 안내한다. Gmail 커넥터가 연결돼 있으면 그쪽 초안 생성이 대안.
+- 발송/승인 후 `crm.py add activity --json '...'`로 기록하고 관계에 **다음 연락일**을 반드시 설정 (REL-09).
 - **접촉빈도 조정** (REL-16): 거절·무반응 관계는 주기를 늘리고, 명시적 수신거부는 즉시 `crm.py suppress add --email <e> --reason optout`.
 
 ## 5. 관계 → 리드 전환 (REL-14·15)
@@ -49,7 +57,7 @@ python3 "$CLAUDE_PLUGIN_ROOT/scripts/crm.py" list relationship --limit 30
 
 ## 6. Business Copilot 핸드오프 수신 (followup-watch → relationships)
 Business Copilot의 followup-watch는 감시만 하고 발송하지 않는다 — 챙길 관계의 실행을 **핸드오프 계약서**(①목표 ②대상/맥락 ③KPI ④예산·리소스 ⑤가드레일 ⑥성공 기준 ⑦중단 기준 ⑧회신 기대 — 포맷은 [[handoff]]와 동일)로 이 스킬에 넘긴다. 수신 절차:
-1. 계약서 ①~⑧ 파싱 — ⑥⑦(성공/중단 기준)이 비었으면 실행 전에 되물어 채운다.
+1. 계약서 ①~⑧ 파싱 — ⑥⑦(성공/중단 기준)이 비었으면 묻지 말고 기본값(성공: 회신·미팅 수락 / 중단: 수신거부·명확한 거절·최대 5회)으로 채워 실행하고, 회신에 그 사실을 명시한다.
 2. ②의 대상을 relationship으로 등록·갱신하되 **마지막 접점·약속·톤·목표를 그대로 보존**한다(재조사로 덮어쓰지 않음).
 3. ⑤ 가드레일(데이터 경계·금지표현·승인 필요 항목)을 위 발송 게이트에 **추가로** 적용한다.
 4. 2~5단계를 실행하고, ⑧에 따라 결과(접촉·회신·다음 행동)를 `python3 "$CLAUDE_PLUGIN_ROOT/scripts/save_brief.py" --kind team`으로 저장해 회신한다(핸드오프 결과 회신은 팀 공유 산출물). ⑦ 도달 시 즉시 중단하고 보고.

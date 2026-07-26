@@ -8,6 +8,10 @@
 설정은 ~/.sales-copilot/ 에 저장되어 플러그인을 업데이트/재설치해도 유지된다.
 값 하나씩 고치려면 set_config.py 를 쓴다. 웹훅은 SALES_COPILOT_SLACK_PRIVATE/TEAM 환경변수로도 받는다.
 (슬랙이 없어도 됩니다 — 이 단계 없이 채팅 미리보기만으로도 AI 영업맨은 동작합니다.)
+
+내장 엔진 6종(cards/sms/email_send/coldmail/vox/team)은 전부 선택 입력 — 안 넣으면 빈 값으로
+블록만 준비하고 기능 안내를 출력한다. 마지막에 아침 큐·저녁 마감·주간 리포트 **루틴 등록을
+묻지 않고 기본 수행**한다(W5b — --no-routine 으로만 생략).
 """
 import argparse
 import json
@@ -61,6 +65,16 @@ GUIDE = """=== AI 영업맨(Sales Copilot) 반자동 설정 ===
 11. 개인 명함·인맥을 회사 영업에 활용해도 되나 (--personal-contacts): all(전부 가능) /
     selected(사용자가 고른 연락처만) / signal_only(기회만 알리고 자동 연락 금지) / private(완전 비공개)
 
+[선택 — 내장 엔진 6종(안 넣어도 나머지는 전부 동작, 나중에 set_config.py 로 추가 가능)]
+  --cards-sheet-webhook <URL>            명함 구글시트 웹훅(apps-script/cards 배포 후)
+  --vcard-dir <폴더>                     리멤버용 vCard 저장 폴더
+  --sms-key/--sms-secret/--sms-sender    solapi 문자 발송(키 2개 + 등록 발신번호)
+  --smtp-user/--smtp-app-password        Gmail 개별 메일 실발송(앱 비밀번호)
+  --coldmail-sheet-webhook <URL>         콜드메일 대장(apps-script/coldmail 배포 후)
+  --vox-key/--vox-phone                  TryVox AI 전화(아웃바운드·인바운드 콜)
+  --team-members "이름,이름"             팀 관리(/team) 대상 팀원
+  --watch-channels "#영업,#고객문의"      팀 현황을 읽을 슬랙 채널
+
 [한 번에 실행 예]
   python3 scripts/quicksetup.py --name "홍길동" --company "우리회사" \\
       --rank rep --title "대리 / 신규영업" --sell-what "중소 이커머스에 AI 광고 소재 구독" \\
@@ -71,11 +85,61 @@ GUIDE = """=== AI 영업맨(Sales Copilot) 반자동 설정 ===
       --personal-contacts selected \\
       --private "https://hooks.slack.com/services/..."   # 나만 보기 채널 웹훅(선택)
 
-값 하나만 고칠 땐: python3 scripts/set_config.py me.approval_mode=per_item"""
+값 하나만 고칠 땐: python3 scripts/set_config.py me.approval_mode=per_item
+
+설정 저장 후 아침 8시 큐·저녁 5시 마감·금요일 주간 리포트 **루틴 등록을 기본으로 진행**합니다
+(묻지 않음 — 루틴은 옵션이 아니라 뼈대. 생략은 --no-routine 뿐)."""
 
 
 def valid_webhook(url):
     return bool(url) and url.startswith(SLACK_PREFIX)
+
+
+def print_engine_status(cfg):
+    """내장 엔진 6종 설정 상태 — 미설정은 막힘이 아니라 안내(전부 선택 사항)."""
+    cards, sms = cfg.get("cards", {}), cfg.get("sms", {})
+    email, cold = cfg.get("email_send", {}), cfg.get("coldmail", {})
+    vox, team = cfg.get("vox", {}), cfg.get("team", {})
+    rows = [
+        ("명함 시트", bool(cards.get("sheet_webhook_url")),
+         "스캔·CRM 등록은 지금도 동작 — 구글시트 백업은 apps-script/cards 배포 후 cards.sheet_webhook_url"),
+        ("문자(sms)", bool(sms.get("api_key") and sms.get("sender")),
+         "문자 발송은 solapi 키·발신번호 설정 후 (sms.api_key/api_secret/sender)"),
+        ("메일 발송", bool(email.get("username") and email.get("app_password")),
+         "개별 메일 실발송은 Gmail 앱 비밀번호 설정 후 (email_send.username/app_password)"),
+        ("콜드메일 대장", bool(cold.get("sheet_webhook_url")),
+         "대량 발송은 apps-script/coldmail 배포 후 연결 — 발송은 dispatchTick 전담, 외부 행 기본 PAUSED"),
+        ("전화(vox)", bool(vox.get("enabled") and vox.get("api_key")),
+         "TryVox API 키를 넣으면 아웃바운드·인바운드 콜 (vox.api_key, /phone-call)"),
+        ("팀 관리", bool(team.get("members")),
+         "팀원·감시 채널을 넣으면 팀 현황·리드 배정 (/team)"),
+    ]
+    print("\n[내장 엔진 6종 — 전부 선택, 미설정이어도 나머지는 동작]")
+    for label, ok, guide in rows:
+        print(f"  {'✅' if ok else 'ℹ️ '} {label}: " + ("설정됨" if ok else f"미설정 — {guide}"))
+
+
+def print_routine_default(cfg):
+    """W5b: 루틴 등록은 옵션이 아니라 기본 동작 — 묻지 않고 진행한다(--no-routine 만 예외).
+    이 스크립트 자체는 스케줄러가 없으므로 ①클로드에 스케줄 도구가 있으면 지금 바로 등록하라는
+    지시를 출력하고(등록 후 brief.routine_enabled=true 저장) ②없는 환경이면 schedule_brief.py
+    레시피·크론 라인을 보여준다. 상태는 config brief.routine_enabled 로 기록된다."""
+    try:
+        import schedule_brief as sb  # noqa: PLC0415 — 같은 폴더, 표준 라이브러리만 사용
+        recipes = [(k, sb.RECIPES[k]) for k in ("morning", "evening", "weekly")]
+        human = sb.human
+    except Exception:
+        recipes, human = [], str
+    brief = cfg.get("brief", {})
+    print("\n[루틴 등록 — 기본 진행] 매일 자동은 옵션이 아니라 뼈대입니다(묻지 않음, 거부 시 --no-routine).")
+    for _kind, r in recipes:
+        cron = brief.get(r["cfg_key"]) or r["cron"]
+        print(f"  · {r['title']}: {human(cron)}  (크론식 {cron}, 스킬 /{r['skill']})")
+    print("  → 클로드: 스케줄 도구(scheduled-tasks/클라우드 루틴)가 있으면 위 3개를 지금 바로 등록하고")
+    print("    (사용자에게 다시 묻지 말 것 — 명시적 거부일 때만 생략) 등록 완료 후 실행:")
+    print('      python3 "$CLAUDE_PLUGIN_ROOT/scripts/set_config.py" brief.routine_enabled=true')
+    print("  → 스케줄 도구가 없는 환경이면 레시피 출력: python3 scripts/schedule_brief.py --kind morning")
+    print("    (claude.ai/code/routines 웹 등록 또는 crontab — 등록 확인 전까지 brief.routine_enabled=false 유지)")
 
 
 def split_list(raw):
@@ -109,7 +173,22 @@ def main():
     ap.add_argument("--cards-inbox", default="", help="명함 사진을 모아두는 폴더(선택)")
     ap.add_argument("--private", default="", help="나만 보기 슬랙 Incoming Webhook URL(선택)")
     ap.add_argument("--team", default="", help="팀 공유 슬랙 웹훅 URL(선택)")
+    # 내장 엔진 6종 — 전부 선택 입력. 미입력이면 빈 값으로 블록만 준비하고 기능 안내를 출력한다.
+    ap.add_argument("--cards-sheet-webhook", default="", help="명함 구글시트 웹훅 URL(선택)")
+    ap.add_argument("--vcard-dir", default="", help="리멤버용 vCard 저장 폴더(선택)")
+    ap.add_argument("--sms-key", default="", help="solapi API 키(선택)")
+    ap.add_argument("--sms-secret", default="", help="solapi API 시크릿(선택)")
+    ap.add_argument("--sms-sender", default="", help="문자 발신번호(사전 등록된 번호, 선택)")
+    ap.add_argument("--smtp-user", default="", help="Gmail SMTP 계정(선택)")
+    ap.add_argument("--smtp-app-password", default="", help="Gmail 앱 비밀번호(선택)")
+    ap.add_argument("--coldmail-sheet-webhook", default="", help="콜드메일 대장 웹훅 URL(선택)")
+    ap.add_argument("--vox-key", default="", help="TryVox 조직 API 키(선택)")
+    ap.add_argument("--vox-phone", default="", help="Vox 발급/연결 전화번호(선택)")
+    ap.add_argument("--team-members", default="", help="팀원 이름(쉼표 구분, 선택)")
+    ap.add_argument("--watch-channels", default="", help="팀 현황을 읽을 슬랙 채널(쉼표 구분, 선택)")
     ap.add_argument("--no-test", action="store_true", help="테스트 메시지 발송 생략")
+    ap.add_argument("--no-routine", action="store_true",
+                    help="루틴 등록 기본 수행 생략(루틴은 기본값 — 명시적으로 거부할 때만)")
     ap.add_argument("--guide", action="store_true", help="질문 11개 안내만 출력")
     args = ap.parse_args()
 
@@ -117,7 +196,11 @@ def main():
     provided = any([args.name, args.company, args.rank, args.title, args.sell_what,
                     args.accounts_scope, args.info_scope, args.send_scope, args.approval_mode,
                     args.send_as, args.sender_email, args.signature, args.escalate_rules,
-                    args.personal_contacts, args.cards_inbox, args.private, args.team])
+                    args.personal_contacts, args.cards_inbox, args.private, args.team,
+                    args.cards_sheet_webhook, args.vcard_dir, args.sms_key, args.sms_secret,
+                    args.sms_sender, args.smtp_user, args.smtp_app_password,
+                    args.coldmail_sheet_webhook, args.vox_key, args.vox_phone,
+                    args.team_members, args.watch_channels])
     if args.guide or not provided:
         print(GUIDE)
         return
@@ -156,6 +239,42 @@ def main():
         cfg.setdefault("company", {})["name"] = args.company
     if args.cards_inbox:
         cfg.setdefault("sources", {})["cards_inbox"] = args.cards_inbox
+
+    # 내장 엔진 6종 블록 — 구버전 config에도 블록을 채워 넣는다(기존 값 보존, 없는 키만 예시값).
+    try:
+        with open(EXAMPLE_CONFIG, encoding="utf-8") as f:
+            example = json.load(f)
+    except (OSError, ValueError):
+        example = {}
+    for blk in ("cards", "sms", "email_send", "coldmail", "vox", "team"):
+        block = cfg.setdefault(blk, {})
+        for k, v in (example.get(blk, {}) or {}).items():
+            block.setdefault(k, v)
+    for key, val in (
+        (("cards", "sheet_webhook_url"), args.cards_sheet_webhook),
+        (("cards", "vcard_dir"), args.vcard_dir),
+        (("sms", "api_key"), args.sms_key),
+        (("sms", "api_secret"), args.sms_secret),
+        (("sms", "sender"), args.sms_sender),
+        (("email_send", "username"), args.smtp_user),
+        (("email_send", "app_password"), args.smtp_app_password),
+        (("coldmail", "sheet_webhook_url"), args.coldmail_sheet_webhook),
+        (("vox", "api_key"), args.vox_key),
+        (("vox", "phone_number"), args.vox_phone),
+    ):
+        if val:
+            cfg[key[0]][key[1]] = val
+    if args.vox_key:
+        cfg["vox"]["enabled"] = True
+    if args.team_members:
+        cfg["team"]["members"] = [{"name": n} for n in split_list(args.team_members)]
+    if args.watch_channels:
+        cfg["team"]["watch_channels"] = split_list(args.watch_channels)
+
+    # 루틴 상태 기록 — 등록 전이면 false 로 명시(등록 완료 시 set_config 로 true 전환).
+    brief = cfg.setdefault("brief", {})
+    brief.setdefault("routine_enabled", False)
+
     delivery = cfg.setdefault("delivery", {})
     if private_wh:
         delivery.setdefault("private", {}).update(enabled=True, slack_webhook=private_wh)
@@ -167,6 +286,7 @@ def main():
     with open(CONFIG_PATH, "w", encoding="utf-8") as f:
         json.dump(cfg, f, ensure_ascii=False, indent=2)
     print(f"[설정 저장] {CONFIG_PATH}")
+    print_engine_status(cfg)
 
     # 2) 영업 컨텍스트(context/ 8종 + _policy) 준비 — 템플릿 복사(없는 파일만)
     src_dir = os.path.join(ROOT, "templates", "context")
@@ -193,11 +313,17 @@ def main():
             ok, msg = send_test(team_wh, "팀 공유")
             print(f"[테스트→팀 공유] {'✅ 전송 — 슬랙 확인' if ok else '⚠️ 실패: ' + msg}")
 
+    # 5) 루틴 등록 — 기본 수행(W5b). 묻지 않는다. --no-routine(명시적 거부)일 때만 생략.
+    if args.no_routine:
+        print("\n[루틴] --no-routine 지정 — 등록 생략(brief.routine_enabled=false 유지). "
+              "나중에 /routine 으로 언제든 등록.")
+    else:
+        print_routine_default(cfg)
+
     print("\n다음 할 일:")
     print("  1) 점검: python3 scripts/doctor.py  (남은 설정·데이터 상태를 ✅/⚠️ 로)")
     print(f"  2) 컨텍스트 채우기: {CONTEXT_DIR}/  (또는 클로드에게 '영업 컨텍스트 채우자')")
     print("  3) 자료 자동 탐색: python3 scripts/find_docs.py  로 명함 사진·제안서·고객 자료 찾기")
-    print("  4) 매일 루틴 등록: python3 scripts/schedule_brief.py --kind morning  (아침 8시 오늘의 큐)")
     print("  아직 답 안 한 질문이 있으면 클로드에게 'AI 영업맨 설정 계속하자'라고 하세요.")
 
 

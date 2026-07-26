@@ -51,7 +51,53 @@
     "use_email": false,
     "use_calendar": false,
     "use_crm": false,
+    "use_slack": false,
+    "use_notion": false,
+    "use_drive": false,
+    "use_github": false,
+    "use_figma": false,
     "cards_inbox": ""
+  },
+  "cards": {
+    "sheet_webhook_url": "",
+    "sheet_webhook_secret": "",
+    "vcard_dir": "",
+    "sales_material_url": ""
+  },
+  "sms": {
+    "provider": "solapi",
+    "api_key": "",
+    "api_secret": "",
+    "sender": ""
+  },
+  "email_send": {
+    "smtp_host": "smtp.gmail.com",
+    "smtp_port": 587,
+    "username": "",
+    "app_password": "",
+    "from_name": ""
+  },
+  "followup": {
+    "interval_days": 30,
+    "max_followups": 3,
+    "channel": "email"
+  },
+  "coldmail": {
+    "sheet_webhook_url": "",
+    "sheet_webhook_secret": "",
+    "_comment": "코드(scripts/state.py)가 읽는 키는 위 2개뿐 — 웹앱 …/exec URL과 SF_API_TOKEN 값(references/09-setup.md 6번). 일일 상한·램프업·발송창은 구글시트 config 탭이, 외부 행 PAUSED 기본·내부 테스트 1건 의무는 apps-script/coldmail/Code.gs가 강제한다"
+  },
+  "vox": {
+    "enabled": false,
+    "api_key": "",
+    "outbound_agent_id": "",
+    "inbound_agent_id": "",
+    "phone_number": "",
+    "webhook_note": "통화 후 분석 웹훅은 vox 대시보드에서 설정 (docs.tryvox.co)"
+  },
+  "team": {
+    "members": [],
+    "watch_channels": []
   },
   "delivery": {
     "team": {
