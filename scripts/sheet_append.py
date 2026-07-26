@@ -69,7 +69,16 @@ def main():
         with open(args.file, encoding="utf-8") as f:
             contact = json.load(f)
     else:
-        contact = json.load(sys.stdin)
+        raw = sys.stdin.read() if not sys.stdin.isatty() else ""
+        if not raw.strip():
+            raise SystemExit(
+                "[사용법] 연락처 JSON을 --file <경로> 또는 stdin으로 넘겨주세요.\n"
+                "  예: echo '{\"name\":\"홍길동\",\"email\":\"a@b.co\"}' | python3 sheet_append.py --dry-run"
+            )
+        try:
+            contact = json.loads(raw)
+        except json.JSONDecodeError as e:
+            raise SystemExit(f"[오류] stdin JSON 파싱 실패: {e}")
     if not isinstance(contact, dict):
         raise SystemExit("[오류] 연락처 JSON은 객체({...})여야 합니다.")
 
