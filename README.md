@@ -46,7 +46,7 @@
 |---|---|
 | **Business Copilot** (사업 사수) | 무엇을 왜 하고 돈·사람을 어디 둘지 결정 |
 | **PM Copilot** (기획 사수) | 정해진 제품을 제대로 실행 |
-| **Marketing Copilot** (예정) | 수요·고객 생성 |
+| **Marketing Copilot** (AI 마케팅 운영자) | 수요·고객 생성 — 콘텐츠·침투·SNS·PR·퍼포먼스 전 채널. 리드가 생기면 이쪽으로 핸드오프 |
 | **Sales Copilot** (이 플러그인) | **관계를 계약으로 전환 — AI 영업맨** |
 
 Business Copilot의 followup-watch가 감지한 "챙길 관계"는 핸드오프 계약으로 이 플러그인이 받아 실행하고, 영업만으로 부족한 리드·인지도·콘텐츠는 [`handoff`](skills/handoff/SKILL.md)로 Marketing에 넘긴다.
