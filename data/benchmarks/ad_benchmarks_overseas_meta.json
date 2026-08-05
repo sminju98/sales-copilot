@@ -1,0 +1,51 @@
+{
+  "generated": "2026-08-06",
+  "scope": "OVERSEAS (mostly US) public advertising benchmarks only",
+  "rule": "No value is estimated or interpolated. Every row carries a source URL and a publication date. Blank = not found.",
+  "tiers": {
+    "A": "primary source page fetched; methodology visible on that page",
+    "B": "figure seen only in a search snippet or secondary write-up - VERIFY before customer-facing use"
+  },
+  "row_count": 450,
+  "gaps_no_data_found": [
+    "Naver (Search / GFA / Shopping) - no overseas source covers it; needs Korean primary source",
+    "Kakao (Moment / Biz Board) - same",
+    "Coupang Ads - same",
+    "YouTube ads CTR/CPV/CVR by industry - only low-quality SEO aggregator blogs found; no primary dataset with disclosed sample",
+    "Korea-market ROAS/CPC/CTR for any channel",
+    "SaaS/B2B ROAS (CAC exists, ROAS does not)",
+    "App-service (mobile app install) CPI/ROAS with a disclosed sample - only secondary aggregators found",
+    "Local-service and Manufacturing verticals on Meta/TikTok ecommerce datasets",
+    "Content/Media vertical outside Triple Whale's 'Media & Publishing' ecommerce cut"
+  ],
+  "korea_leads_not_yet_collected": [
+    "CJ Mezzomedia INSIGHT M 업종 분석 리포트 (https://cjmezzomedia.com/insight-m) - publishes KR digital ad spend by vertical; confirm whether it carries CPC/CTR/ROAS",
+    "Naver 검색광고 공식 성과 데이터 / 키워드도구 (requires an advertiser account)",
+    "Kakao 비즈니스 공식 자료",
+    "DMC미디어 / 나스미디어 연간 리포트"
+  ],
+  "critical_interpretation_warnings": [
+    "ROAS medians differ enormously by channel: Meta ecommerce median 1.86x vs Google Ads ecommerce median 3.68x (both Triple Whale, 2025). A ROAS of 2.1 is ABOVE the Meta median but WELL BELOW the Google median. Never answer 'is 2.1 good' without naming the channel.",
+    "CVR is not one metric. LocaliQ Meta 'leads' CVR 7.72% = lead-form completion. Triple Whale Meta CVR 1.60% = ecommerce purchase. Do not put them in the same column.",
+    "All Tier A sources are US or US-weighted. Korean CPMs, CPCs and consumer behaviour differ. Label every number with its market in the product UI.",
+    "WordStream/LocaliQ figures are medians across campaigns; Triple Whale figures are medians across brands. Different units of aggregation.",
+    "Triple Whale TikTok 'Pets & Animals' ROAS 0.08 is inconsistent with its CPA $13.46 / AOV $12.84 - treat as suspect.",
+    "A secondary write-up cited Triple Whale Meta median ROAS as 1.93x; the fetched Triple Whale page states 1.86x. Use 1.86x."
+  ],
+  "sources_tier_A": [
+    "https://contentsquare.com/guides/digital-experience-benchmark/conversions/",
+    "https://firstpagesage.com/reports/average-cac-for-ecommerce-companies/",
+    "https://firstpagesage.com/reports/average-customer-acquisition-cost-cac-by-industry-b2b-edition-fc/",
+    "https://localiq.com/blog/facebook-advertising-benchmarks/",
+    "https://www.klaviyo.com/products/email-marketing/benchmarks",
+    "https://www.triplewhale.com/blog/facebook-ads-benchmarks",
+    "https://www.triplewhale.com/blog/google-ads-benchmarks",
+    "https://www.triplewhale.com/blog/tiktok-benchmarks",
+    "https://www.wordstream.com/blog/2026-google-ads-benchmarks"
+  ],
+  "sources_tier_B": [
+    "https://www.karooya.com/blog/digital-ads-benchmark-report-by-tinuiti-q1-2026-key-highlights/",
+    "https://www.littledata.io/average/ecommerce-conversion-rate-(all-devices)",
+    "https://www.varos.com/paid-media-benchmarks-cosmetics"
+  ]
+}
