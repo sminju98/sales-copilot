@@ -86,6 +86,21 @@ python3 "$CLAUDE_PLUGIN_ROOT/scripts/set_config.py" sources.use_email=true sourc
 ```
 - **미연결이어도 막지 않는다.** 로컬 최소 CRM(`~/.sales-copilot/crm/` JSONL)이 자동 생성되어 `crm.py`로 전부 동작하고, 커넥터가 붙으면 그쪽 실측 데이터를 우선한다.
 
+### 9-1. [A] 자동 갱신을 건다 — 지금 안 걸면 아무도 안 건다
+Claude Code는 **공식 마켓플레이스만** 자동 갱신을 기본으로 켠다. 이 플러그인은 서드파티라 **기본이 꺼짐**이다. 여기서 걸어 두지 않으면 사용자는 몇 달 전 버전을 쓰면서 그 사실조차 모른다.
+```bash
+python3 "$CLAUDE_PLUGIN_ROOT/scripts/update_check.py" --install-cron
+```
+매주 월요일 09:30 점검·갱신. **사용자가 손댄 파일은 자동으로 지켜진다.** 본체는 [[update]].
+Claude Code 자체 자동 갱신은 대화형 패널이라 대신 눌러 줄 수 없으니 이 줄을 그대로 전달한다: `/plugin → Marketplaces → 이 플러그인 → Enable auto-update`
+
+### 9-2. [A] 언어 — 묻지 말고 감지한다
+기본값 `auto` 그대로 두고, 사용자가 요청하거나 팀 공용 산출물의 언어를 못 박아야 할 때만 값을 넣는다.
+```bash
+python3 "$CLAUDE_PLUGIN_ROOT/scripts/set_config.py" language=auto   # en·ja·zh 등으로 고정 가능
+```
+- **대화 언어와 산출물 언어는 다르다.** 자세히 [[method]] 00절.
+
 ## 9. 내장 엔진 6종 연결 — 전부 선택, 안 붙여도 나머지는 전부 동작
 여기서부터는 답을 안 해도 된다("나중에"면 그대로 넘어간다). 미설정은 막힘이 아니라 안내다 — 그 기능을 쓰려는 순간 해당 스킬이 무엇이 빠졌는지 다시 짚어준다.
 

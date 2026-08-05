@@ -28,6 +28,7 @@
     "reports_to": "",
     "timezone": "Asia/Seoul"
   },
+  "language": "auto",
   "company": {
     "name": "우리 회사",
     "one_liner": "무엇을, 누구에게, 왜 좋은지 한 줄 소개",
