@@ -64,6 +64,19 @@ python3 "$CLAUDE_PLUGIN_ROOT/scripts/crm.py" find activity kim@acme.co.kr
 2. **영업 메일 판정(§1) + 사실·표기 검사** — 5조건 판정 후, 문안의 **사실(확인된 것) vs 추론(가설)** 구분·추론은 단정하지 않는 표현으로. **누가(발신자·소속) 왜(연락 경위·목적) 무엇을** 원하는지 첫 화면에서 명확해야 통과 (SAFE-06). 광고성 판정이면 §2 의무((광고) 표기·동의 경로) 확인.
 3. **approval_mode 적용** — `auto`일 때만 허용범위 내 자동 발송. `batch`/`per_item`은 승인 대기, **`draft_only`·미설정이면 절대 자동 발송 금지**(초안까지만). 신입·외부·타부서는 모드와 무관하게 상신[E]까지만. 자세히 [[role]].
 
+### 5-1. ★하드 게이트 — 발송량·시간대·양식은 코드가 센다 (SAFE-05 강제화)
+위 3단계는 모델이 읽고 판정한다. **발송량 상한·야간 금지·승인 양식 동일성은 판단에 맡기지 않고 `gates.py`가 파일 상태로 센다.** exit code 2면 그 자리에서 발송을 중단한다 — 우회 금지.
+```bash
+G="$CLAUDE_PLUGIN_ROOT/scripts/gates.py"
+python3 "$G" check-send --channel email --count 40 --template-id <양식ID>   # 발송 직전
+python3 "$G" record-send --channel email --count 40 --template-id <양식ID>  # 실제 발송 후 누계 반영
+```
+- **양식 판정은 해시로 한다.** 승인본과 본문이 다르면 "새 양식"이라 자동 발송 대상이 아니다. 승인했으면 사람이 등록: `python3 "$G" template register --id <양식ID> --file <문안파일> --scope email`
+- **한도가 config에 없으면 차단이 기본값**(fail-closed)이고, 이 스크립트는 한도를 **올리지 못한다** — 상향은 사람이 `config.json`의 `gates.*`를 직접 고쳐야 한다.
+- 야간 구간(`gates.quiet_hours`, 기본 21~8시)은 정보통신망법 광고성 야간 발송 제한 대비다. 시간대 검사는 발송 시각 기준으로 매번 다시 돈다.
+- 처음 켤 때 한 번은 **네거티브 테스트**로 실제 차단을 확인한다: `python3 "$G" selftest` — 통과를 확인해서는 게이트가 검증되지 않는다. 넘겨봤을 때 막혀야 검증된다.
+- 판정은 통과·차단 모두 `gates/gate_log.jsonl`에 남는다. 감사 대상은 결과가 아니라 **판정 이력**이다.
+
 ## 6. 수신거부·반송·평판을 자동 반영한다 (SAFE-04·SAFE-07·SAFE-08)
 ```bash
 python3 "$CLAUDE_PLUGIN_ROOT/scripts/crm.py" suppress add --email kim@acme.co.kr --reason "회신으로 수신거부(2026-07-26)"
