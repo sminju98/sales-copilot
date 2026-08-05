@@ -13,15 +13,15 @@ description: 매일 자동화를 실제로 등록한다 — 오전 8시 행동 �
 
 ## 0. 준비 — 걸 수 있는 상태인지 30초 진단
 ```bash
-python3 "$CLAUDE_PLUGIN_ROOT/scripts/doctor.py"
-python3 "$CLAUDE_PLUGIN_ROOT/scripts/crm.py" stats
+sales-copilot doctor
+sales-copilot crm stats
 ```
 - 설정이 없으면 [[setup]]이 먼저다 — 빈 CRM에 아침 루틴을 걸면 매일 "할 일 없음"만 온다. 슬랙 개인 채널(`SALES_COPILOT_SLACK_PRIVATE`) 미설정이면 결과가 채팅·파일로만 남는다고 알리되 **등록 자체는 막지 않는다.**
 
 ## 1. 등록 — 방법 우선순위 3단계, 되는 걸로 즉시 건다
 루틴 3종의 크론식은 config `brief.morning_schedule`(기본 `0 8 * * 1-5`)·`evening_schedule`(`0 17 * * 1-5`)·`weekly_schedule`(`0 9 * * 5`), 예약 프롬프트는 아래 출력의 프롬프트를 그대로 쓴다.
 ```bash
-python3 "$CLAUDE_PLUGIN_ROOT/scripts/schedule_brief.py" --kind morning   # evening·weekly 동일 — 크론식+프롬프트+환경변수
+sales-copilot schedule_brief --kind morning   # evening·weekly 동일 — 크론식+프롬프트+환경변수
 ```
 ① **스케줄 도구로 직접 등록(기본).** 클로드에 스케줄 도구(scheduled-tasks·클라우드 루틴·`/schedule`)가 보이면 3종을 지금 등록하고, **등록 목록을 조회해 실제로 걸렸는지 확인**한다.
 ② **crontab 라인.** 도구가 없고 로컬 셸이 있으면 crontab에 추가한다(`crontab -l`로 기존 내용 백업 후 덧붙이기 — 기존 항목을 지우지 않는다). 라인 형식(claude CLI 헤드리스):
@@ -31,7 +31,7 @@ python3 "$CLAUDE_PLUGIN_ROOT/scripts/schedule_brief.py" --kind morning   # eveni
 ③ **클라우드 루틴 안내(수동 폴백).** 둘 다 불가한 환경이면 claude.ai/code/routines 웹에서 New routine을 만들도록 레시피(프롬프트+`SALES_COPILOT_SCHEDULED=1`·웹훅 환경변수)를 건네준다 — 이 경로만 사용자 손이 필요하다.
 - 등록이 **확인된 후에만** 상태를 기록한다(③은 사용자가 "예약 완료"라고 할 때):
 ```bash
-python3 "$CLAUDE_PLUGIN_ROOT/scripts/set_config.py" brief.routine_enabled=true
+sales-copilot set_config brief.routine_enabled=true
 ```
 
 ## 2. 루틴 3종이 하는 일 (§7 오전 8시 / 오후 5시 / 매주)
@@ -43,13 +43,13 @@ python3 "$CLAUDE_PLUGIN_ROOT/scripts/set_config.py" brief.routine_enabled=true
 - **확인**: 스케줄 도구의 목록 조회 / `crontab -l` / claude.ai/code/routines 웹. config `brief.routine_enabled`와 실제 등록이 어긋나면 **실제 등록 상태를 믿고 config를 맞춘다.**
 - **수정**(시간 변경 등): 크론식을 config에 저장하고 §1과 같은 우선순위로 재등록(기존 항목 갱신·교체 — 중복 등록 금지).
 ```bash
-python3 "$CLAUDE_PLUGIN_ROOT/scripts/set_config.py" brief.morning_schedule="0 7 * * 1-5"
+sales-copilot set_config brief.morning_schedule="0 7 * * 1-5"
 ```
 - **해제**: 사용자가 요청할 때만 — 등록 항목 삭제 후 `set_config.py brief.routine_enabled=false`. 멋대로 끄지 않는다.
 
 ## 4. 무인 실행 규칙 (`SALES_COPILOT_SCHEDULED=1`) — 발송 게이트는 그대로
 무인 실행은 사람이 옆에 없다는 뜻이다. 발송 게이트를 평소보다 엄격하게:
-1. **수신거부·중복 검사**: `python3 "$CLAUDE_PLUGIN_ROOT/scripts/crm.py" suppress-check --email <e>` — 걸리면 즉시 제외.
+1. **수신거부·중복 검사**: `sales-copilot crm suppress-check --email <e>` — 걸리면 즉시 제외.
 2. **사실 오류 검사**: 문안의 사실(확인된 것) vs 추론(가설) 구분, 추론은 단정하지 않는 표현으로.
 3. **approval_mode 적용**: 무인 자동 발송은 `approval_mode=auto`이면서 그 행동이 `send_scope` 안에 있을 때만. batch/per_item은 승인 대기 묶음으로 저장만, **draft_only·미설정이면 절대 발송하지 않는다.** 신입·타부서·외부는 상신([E])까지만.
 - 야간(21시~8시) 채널 제한 등 법·채널 규칙은 [[send-policy]]를 통과해야 한다. 발송 불가 대상은 버리지 말고 소개 요청·[[phone-call]] 등 대체 경로로 분기.

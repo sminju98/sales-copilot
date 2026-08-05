@@ -13,13 +13,13 @@ ICP는 전략 문서가 아니라 **발굴 필터**다. 상상 속 페르소나�
 
 ## 0. 준비 — 수주·실주 근거를 로드한다 (근거 없으면 ICP 못 만든다)
 ```bash
-python3 "$CLAUDE_PLUGIN_ROOT/scripts/doctor.py"
+sales-copilot doctor
 cat "${SALES_COPILOT_HOME:-$HOME/.sales-copilot}/context/icp.md" 2>/dev/null || echo "(icp 컨텍스트 없음 — 이번에 생성)"
-python3 "$CLAUDE_PLUGIN_ROOT/scripts/crm.py" list opportunity --limit 100
-python3 "$CLAUDE_PLUGIN_ROOT/scripts/crm.py" list account --limit 100
-python3 "$CLAUDE_PLUGIN_ROOT/scripts/crm.py" stats
+sales-copilot crm list opportunity --limit 100
+sales-copilot crm list account --limit 100
+sales-copilot crm stats
 ```
-- CRM 커넥터(HubSpot 등)가 연결돼 있으면 **그 실측 데이터를 우선**하고, 없으면 로컬 CRM(`~/.sales-copilot/crm/`)으로 동작한다. 수주·실주 기록이 CRM에 없으면 `python3 "$CLAUDE_PLUGIN_ROOT/scripts/find_docs.py"`로 계약서·제안서·회의록을 뒤져 보완한다.
+- CRM 커넥터(HubSpot 등)가 연결돼 있으면 **그 실측 데이터를 우선**하고, 없으면 로컬 CRM(`~/.sales-copilot/crm/`)으로 동작한다. 수주·실주 기록이 CRM에 없으면 `sales-copilot find_docs`로 계약서·제안서·회의록을 뒤져 보완한다.
 - 회사·상품·금지 고객 조건은 [[context]]의 `context/` 8종에서 가져온다. 수주 이력이 아예 없으면(신규 사업) — 데이터를 지어내지 말고 **가설 ICP**로 표기하고, 창업자의 판단·유사 사례를 근거로 좁혀서 곧장 4단계로 간다. 가설도 검색조건으로 끝나야 한다.
 
 ## 1. 수주·실주 고객을 분석한다 (ICP-01~07)

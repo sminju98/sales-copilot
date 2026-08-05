@@ -13,8 +13,8 @@ description: 미팅 후 자동 처리 — 회의록·녹취에서 BANT·경쟁�
 
 ## 0. 준비 — 회의록·녹취 수집 (POST-01)
 ```bash
-python3 "$CLAUDE_PLUGIN_ROOT/scripts/find_docs.py"                    # 로컬 회의록·녹취·메모 탐색
-python3 "$CLAUDE_PLUGIN_ROOT/scripts/crm.py" find lead "<회사/담당자>"  # 관련 리드·접촉 이력 로드
+sales-copilot find_docs                    # 로컬 회의록·녹취·메모 탐색
+sales-copilot crm find lead "<회사/담당자>"  # 관련 리드·접촉 이력 로드
 ```
 - 회의록 툴·Gmail·캘린더 커넥터가 연결돼 있으면 그쪽 녹취·초대장·스레드를, 노션 연결 시 회의록 페이지를 우선 수집하고, 미연결이면 로컬 파일과 사용자가 붙여넣는 메모로 동작한다. **소스가 없으면 기억으로 재구성하지 말고** 사용자에게 3줄 메모라도 받는다.
 - [[prepare-meeting]] 브리핑이 있으면 함께 로드 — 미팅 목표 대비 무엇이 확인됐는지 비교한다.
@@ -28,13 +28,13 @@ python3 "$CLAUDE_PLUGIN_ROOT/scripts/crm.py" find lead "<회사/담당자>"  # �
 ## 2. 담당·기한 지정 + 활동 기록 (POST-08)
 약속마다 담당(우리/고객)과 기한을 붙인다. 기한 없는 약속은 잊힌 약속이다.
 ```bash
-python3 "$CLAUDE_PLUGIN_ROOT/scripts/crm.py" add activity --json '{"type":"meeting","lead_id":"<id>","date":"<날짜>","summary":"<핵심 요약>","commitments":"<약속·담당·기한>"}'
+sales-copilot crm add activity --json '{"type":"meeting","lead_id":"<id>","date":"<날짜>","summary":"<핵심 요약>","commitments":"<약속·담당·기한>"}'
 ```
 
 ## 3. 후속 메일 — 작성 후 발송 게이트 (POST-09 · POST-10 [P/A])
 24시간 안에 나가는 게 원칙. 감사 + 합의사항 확인 + 약속 이행(자료 첨부 등) + 다음 단계 1개 제안. 회의록에 없는 효과·수치를 덧붙이지 않는다. **발송 전 게이트(순서 고정):**
 ```bash
-python3 "$CLAUDE_PLUGIN_ROOT/scripts/crm.py" suppress-check --email <상대 이메일>   # ① 수신거부·중복 검사
+sales-copilot crm suppress-check --email <상대 이메일>   # ① 수신거부·중복 검사
 ```
 ② 사실 오류 검사(합의 내용·이름·직함·수치를 회의록과 대조) → ③ `approval_mode` 적용: `auto`면 발송, 그 외 초안+승인. **draft_only·미설정이면 절대 자동 발송 금지.** 신입·외부·타부서는 발송 대신 상신 [E]까지만. 자세히 [[role]].
 
@@ -43,8 +43,8 @@ python3 "$CLAUDE_PLUGIN_ROOT/scripts/crm.py" suppress-check --email <상대 이�
 
 ## 5. 리드 상태 갱신 · 기회 전환 판단 (POST-12 · POST-13)
 ```bash
-python3 "$CLAUDE_PLUGIN_ROOT/scripts/crm.py" update lead <id> --json '{"status":"<갱신>","next_action":"<다음 행동>","next_action_date":"<기한>"}'
-python3 "$CLAUDE_PLUGIN_ROOT/scripts/crm.py" add opportunity --json '{"lead_id":"<id>","stage":"<단계>","why_buy":"<구매 이유>","next_action":"<행동>","next_action_date":"<기한>"}'   # 전환 시
+sales-copilot crm update lead <id> --json '{"status":"<갱신>","next_action":"<다음 행동>","next_action_date":"<기한>"}'
+sales-copilot crm add opportunity --json '{"lead_id":"<id>","stage":"<단계>","why_buy":"<구매 이유>","next_action":"<행동>","next_action_date":"<기한>"}'   # 전환 시
 ```
 전환 기준: **BANT 중 2개 이상 확인 + 고객이 다음 단계에 합의.** 기준을 충족하면 묻지 않고 전환해 두고 통보한다. 근거가 부족하면 리드로 유지하고 사유를 남긴다. 이후 관리는 [[pipeline]].
 
@@ -56,14 +56,14 @@ python3 "$CLAUDE_PLUGIN_ROOT/scripts/crm.py" add opportunity --json '{"lead_id":
 
 ## 8. 참가자 연락처·관계 업데이트 (POST-16)
 ```bash
-python3 "$CLAUDE_PLUGIN_ROOT/scripts/crm.py" dedupe contact --json '{"name":"<이름>","email":"<이메일>"}'   # 중복 검사 → add 또는 update
+sales-copilot crm dedupe contact --json '{"name":"<이름>","email":"<이메일>"}'   # 중복 검사 → add 또는 update
 ```
 새 참가자는 contact 추가, 기존 인물은 직함·역할(실무/영향자/결재권자)·온도 갱신, relationship에 이번 미팅 접점을 기록한다.
 
 ## 9. 마감 검증 — 방구석 금지
 ```bash
-python3 "$CLAUDE_PLUGIN_ROOT/scripts/crm.py" next-missing        # 이 리드·기회에 다음 행동 있는지 확인
-python3 "$CLAUDE_PLUGIN_ROOT/scripts/queue_today.py" --build     # 오늘의 행동 큐에 반영
+sales-copilot crm next-missing        # 이 리드·기회에 다음 행동 있는지 확인
+sales-copilot queue_today --build     # 오늘의 행동 큐에 반영
 ```
 후속 메일도 다음 일정도 없으면 종료하지 않는다 — 최소 승인 대기 초안 1건을 만들어 [[today]] 큐에 올린다.
 

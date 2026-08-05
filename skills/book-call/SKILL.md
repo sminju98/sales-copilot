@@ -13,8 +13,8 @@ description: 긍정 회신·인바운드를 실제 콜로 전환 — 미팅 유�
 
 ## 0. 준비 — 상대·접촉 이력·권한 로드
 ```bash
-python3 "$CLAUDE_PLUGIN_ROOT/scripts/crm.py" find contact "<이름 또는 회사>"
-python3 "$CLAUDE_PLUGIN_ROOT/scripts/crm.py" list activity --where contact_id=<id> --limit 10
+sales-copilot crm find contact "<이름 또는 회사>"
+sales-copilot crm list activity --where contact_id=<id> --limit 10
 cat "${SALES_COPILOT_HOME:-$HOME/.sales-copilot}/config.json" 2>/dev/null   # approval_mode·send_scope·escalate_rules
 ```
 - 어디서 온 콜 요청인지 확인한다: [[classify-reply]]의 긍정 분기, [[inbound]]의 콜 연결, 또는 [[today]] 큐. 연결된 리드·영업기회 레코드를 같이 연다. 이력이 없으면 지어내지 말고 **있는 정보로 유형 판정·후보 산출까지 먼저 해놓은 뒤** 빠진 맥락만 사용자에게 확인한다.
@@ -31,7 +31,7 @@ cat "${SALES_COPILOT_HOME:-$HOME/.sales-copilot}/config.json" 2>/dev/null   # ap
 - 겹치는 후보 **2~3개를 상대 시간대로 환산해 제안**한다(CALL-07). config에 예약링크(Calendly 등)가 등록돼 있으면 함께 첨부한다(CALL-08) — 링크는 보조 수단이고, 구체적 후보 제시가 기본이다.
 
 ## 3. 발송 게이트 (모든 대외 메시지 공통 — 시간 제안·초대·재예약)
-1) `python3 "$CLAUDE_PLUGIN_ROOT/scripts/crm.py" suppress-check --email <email>` — 수신거부·중복 검사
+1) `sales-copilot crm suppress-check --email <email>` — 수신거부·중복 검사
 2) 사실 검사 — 이름·회사·직전 대화 인용이 정확한지, 확인 안 된 내용은 단정하지 않는 표현으로
 3) approval_mode 적용 — **DRAFT ONLY/미설정이면 절대 자동 발송 금지, 초안+승인 요청까지만.** 신입·외부·타부서는 자동 발송 금지(상신까지만).
 
@@ -42,8 +42,8 @@ cat "${SALES_COPILOT_HOME:-$HOME/.sales-copilot}/config.json" 2>/dev/null   # ap
 
 ## 5. CRM 연결·다음 행동
 ```bash
-python3 "$CLAUDE_PLUGIN_ROOT/scripts/crm.py" add activity --json '{"type":"meeting_booked","contact_id":"<id>","when":"<확정 일시>","meeting_type":"<유형>"}'
-python3 "$CLAUDE_PLUGIN_ROOT/scripts/crm.py" update lead <id> --json '{"status":"call_booked","next_action":"미팅 전 브리핑 확인","next_action_date":"<미팅 전날>"}'
+sales-copilot crm add activity --json '{"type":"meeting_booked","contact_id":"<id>","when":"<확정 일시>","meeting_type":"<유형>"}'
+sales-copilot crm update lead <id> --json '{"status":"call_booked","next_action":"미팅 전 브리핑 확인","next_action_date":"<미팅 전날>"}'
 ```
 - 일정을 회사·연락처·영업기회 레코드에 연결한다(CALL-13). 다음 행동은 [[prepare-meeting]] 브리핑으로 이어지게 세팅 — **콜만 잡고 끝나는 리드는 없다.**
 - 노쇼가 잦은 유형(첫 미팅·장기 리드)은 미팅 전날 **확정 리마인드**를 건다 — 메일 또는 AI 리마인드 콜([[phone-call]], vox 연동 시). 발송 게이트 동일.

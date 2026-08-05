@@ -13,11 +13,11 @@ description: 기존 인맥 자산화·관계 유지 — 메일·캘린더·연�
 
 ## 0. 준비 — 관계 대장 로드
 ```bash
-python3 "$CLAUDE_PLUGIN_ROOT/scripts/doctor.py"
-python3 "$CLAUDE_PLUGIN_ROOT/scripts/crm.py" stats
-python3 "$CLAUDE_PLUGIN_ROOT/scripts/crm.py" list relationship --limit 30
+sales-copilot doctor
+sales-copilot crm stats
+sales-copilot crm list relationship --limit 30
 ```
-- **커넥터 우선, 로컬 폴백**: Gmail·캘린더·연락처가 연결돼 있으면 실측 접촉이력을 우선한다. 미연결이면 로컬 CRM(`~/.sales-copilot/crm/`)과 `python3 "$CLAUDE_PLUGIN_ROOT/scripts/find_docs.py"`(회의록·메일 내보내기·명함 사진)로 추린다.
+- **커넥터 우선, 로컬 폴백**: Gmail·캘린더·연락처가 연결돼 있으면 실측 접촉이력을 우선한다. 미연결이면 로컬 CRM(`~/.sales-copilot/crm/`)과 `sales-copilot find_docs`(회의록·메일 내보내기·명함 사진)로 추린다.
 
 ## 1. 관계 수집·정리 (REL-01·02·03·13·17)
 - 이메일·캘린더·연락처에서 기존 관계를 수집해 `crm.py add relationship --json '...'`으로 등록, `crm.py dedupe contact --json '...'`로 중복 정리 (REL-01). 명함 유입은 [[import-cards]] 담당 — 여기서 다시 스캔하지 않는다.
@@ -41,10 +41,10 @@ python3 "$CLAUDE_PLUGIN_ROOT/scripts/crm.py" list relationship --limit 30
 ## 4. 발송 게이트 → 실제 발송·빈도 조정 (REL-09·16)
 발송 전 반드시: ① `crm.py suppress-check --email <e>` 수신거부·중복 검사 → ② 사실 오류 검사(이름·회사·직책·명분 출처) → ③ `approval_mode` 적용. **DRAFT ONLY거나 미설정이면 절대 자동 발송 금지.** 신입·외부·타부서는 상신·소개요청까지만 (자세히 [[role]]). 국가·채널 규칙은 [[send-policy]].
 ```bash
-python3 "$CLAUDE_PLUGIN_ROOT/scripts/crm.py" suppress-check --email <e>
-python3 "$CLAUDE_PLUGIN_ROOT/scripts/send_email.py" --to <e> --subject "..." --body-file draft.txt --dry-run   # 개별 발송 미리보기 → 승인 후 --dry-run 제거
-python3 "$CLAUDE_PLUGIN_ROOT/scripts/send_sms.py" --to 010-0000-0000 --text "..." --dry-run
-python3 "$CLAUDE_PLUGIN_ROOT/scripts/followup_send.py" --dry-run   # 주기 안부 일괄: 대상·문안 확인 → 승인 후 --dry-run 제거해 실발송
+sales-copilot crm suppress-check --email <e>
+sales-copilot send_email --to <e> --subject "..." --body-file draft.txt --dry-run   # 개별 발송 미리보기 → 승인 후 --dry-run 제거
+sales-copilot send_sms --to 010-0000-0000 --text "..." --dry-run
+sales-copilot followup_send --dry-run   # 주기 안부 일괄: 대상·문안 확인 → 승인 후 --dry-run 제거해 실발송
 ```
 - **실행 수단은 내장 스크립트다** (REL-09 [P/A]): 개별 안부·축하는 `send_email.py`/`send_sms.py`(수신거부·야간 게이트 내장), 주기 안부 일괄은 `followup_send.py`(config `followup` 블록: interval_days·max_followups·channel — 실발송 성공 건만 `followups_sent`·`last_contact_at` 자동 갱신). 문안 베이스는 `templates/messages/`(greeting/sales/followup × sms/email). 초안·dry-run까지는 묻지 말고 만들어 두고, **질문은 "발송할까요?" 하나만**.
 - SMTP·솔라피 미설정이면 초안·미리보기까지 해놓고 설정 경로(`set_config.py email_send.* / sms.*`) 한 줄만 안내한다. Gmail 커넥터가 연결돼 있으면 그쪽 초안 생성이 대안.
@@ -53,14 +53,14 @@ python3 "$CLAUDE_PLUGIN_ROOT/scripts/followup_send.py" --dry-run   # 주기 안�
 
 ## 5. 관계 → 리드 전환 (REL-14·15)
 - 접촉·회신·명분을 근거로 고객·파트너 가능성을 재평가한다 (REL-14) — 근거 없는 승격 금지.
-- 영업 가능성이 생기면 `crm.py add lead --json '...'`로 전환하고(출처=관계, 연락 근거 명시) `python3 "$CLAUDE_PLUGIN_ROOT/scripts/queue_today.py" --build`로 오늘 큐에 올린다 (REL-15) → 이후는 [[today]]. 휴면·실주 고객 재접촉은 [[revive]] 담당.
+- 영업 가능성이 생기면 `crm.py add lead --json '...'`로 전환하고(출처=관계, 연락 근거 명시) `sales-copilot queue_today --build`로 오늘 큐에 올린다 (REL-15) → 이후는 [[today]]. 휴면·실주 고객 재접촉은 [[revive]] 담당.
 
 ## 6. Business Copilot 핸드오프 수신 (followup-watch → relationships)
 Business Copilot의 followup-watch는 감시만 하고 발송하지 않는다 — 챙길 관계의 실행을 **핸드오프 계약서**(①목표 ②대상/맥락 ③KPI ④예산·리소스 ⑤가드레일 ⑥성공 기준 ⑦중단 기준 ⑧회신 기대 — 포맷은 [[handoff]]와 동일)로 이 스킬에 넘긴다. 수신 절차:
 1. 계약서 ①~⑧ 파싱 — ⑥⑦(성공/중단 기준)이 비었으면 묻지 말고 기본값(성공: 회신·미팅 수락 / 중단: 수신거부·명확한 거절·최대 5회)으로 채워 실행하고, 회신에 그 사실을 명시한다.
 2. ②의 대상을 relationship으로 등록·갱신하되 **마지막 접점·약속·톤·목표를 그대로 보존**한다(재조사로 덮어쓰지 않음).
 3. ⑤ 가드레일(데이터 경계·금지표현·승인 필요 항목)을 위 발송 게이트에 **추가로** 적용한다.
-4. 2~5단계를 실행하고, ⑧에 따라 결과(접촉·회신·다음 행동)를 `python3 "$CLAUDE_PLUGIN_ROOT/scripts/save_brief.py" --kind team`으로 저장해 회신한다(핸드오프 결과 회신은 팀 공유 산출물). ⑦ 도달 시 즉시 중단하고 보고.
+4. 2~5단계를 실행하고, ⑧에 따라 결과(접촉·회신·다음 행동)를 `sales-copilot save_brief --kind team`으로 저장해 회신한다(핸드오프 결과 회신은 팀 공유 산출물). ⑦ 도달 시 즉시 중단하고 보고.
 
 ## 출력
 ```

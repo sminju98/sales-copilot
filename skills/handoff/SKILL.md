@@ -13,7 +13,7 @@ description: 영업 데이터로 부족분(리드 풀·회신률·인지도·콘
 
 ## 0. 준비 — 데이터 없으면 핸드오프 없음
 ```bash
-python3 "$CLAUDE_PLUGIN_ROOT/scripts/crm.py" stats
+sales-copilot crm stats
 cat "${SALES_COPILOT_HOME:-$HOME/.sales-copilot}/context/"{company,products,icp}.md 2>/dev/null || echo "(컨텍스트 없음 — [[context]] 먼저)"
 ```
 - 깔때기 수치(접촉→회신→콜→기회→수주)는 [[metrics]] 주간 리포트를 우선 사용한다. 수치가 없으면 지어내지 말고 **"확인 필요"** — 활동 데이터가 최소 2주 쌓인 뒤 다시 시도한다.
@@ -46,8 +46,8 @@ cat "${SALES_COPILOT_HOME:-$HOME/.sales-copilot}/context/"{company,products,icp}
 ## 4. 수주 인수인계 문서 (DEAL-14)
 [[deal]]에서 수주 확정이 넘어오면 CS·운영이 그대로 받을 수 있는 문서를 만든다. 근거는 CRM 기록에서만 — 기억이 아니라 기록.
 ```bash
-python3 "$CLAUDE_PLUGIN_ROOT/scripts/crm.py" get opportunity <기회ID>
-python3 "$CLAUDE_PLUGIN_ROOT/scripts/crm.py" list activity --where account_id=<계정ID> --limit 50
+sales-copilot crm get opportunity <기회ID>
+sales-copilot crm list activity --where account_id=<계정ID> --limit 50
 ```
 포함 항목: **계약 요약**(상품·금액·기간) / **양측 약속사항**(미팅 기록에서 추출된 것만) / **이해관계자**(실무·결재·주의 인물) / **우려·반론 이력**(온보딩 때 터질 지뢰) / **일정**(킥오프·청구) / **영업이 계속 쥘 것**(갱신·업셀 시점 → [[revive]]용 next_action으로 CRM에 등록). 가격 협상 경위·할인 하한 같은 내부 민감 정보는 뺀다.
 
@@ -60,8 +60,8 @@ python3 "$CLAUDE_PLUGIN_ROOT/scripts/crm.py" list activity --where account_id=<�
 - 받는 코파일럿이 **설치돼 있으면** 해당 스킬 호출을 제안하고 계약서를 그대로 인풋으로 넘긴다.
 - **미설치면** 문서 저장·슬랙 공유로 대신한다 [P]:
 ```bash
-python3 "$CLAUDE_PLUGIN_ROOT/scripts/save_brief.py" --kind team   # 팀 공유용 핸드오프 산출물 저장
-python3 "$CLAUDE_PLUGIN_ROOT/scripts/post_slack.py" --to team   # 본문은 stdin. 민감 정보 있으면 --to private
+sales-copilot save_brief --kind team   # 팀 공유용 핸드오프 산출물 저장
+sales-copilot post_slack --to team   # 본문은 stdin. 민감 정보 있으면 --to private
 ```
 - **예산·대외 실행(광고 집행·고객 접촉)이 걸린 위임은 [E]** — 계약서까지만 만들고 실행은 `escalate_rules` 기준 승인 뒤. 실행이 돌기 시작하면 ⑧대로 성과를 받아 [[metrics]] 깔때기에 되돌린다.
 

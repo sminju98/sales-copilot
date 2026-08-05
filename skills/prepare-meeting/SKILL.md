@@ -13,9 +13,9 @@ description: 미팅 전 브리핑 — 회사 요약·최근 뉴스·전체 접�
 
 ## 0. 준비 — 미팅·상대·컨텍스트 로드
 ```bash
-python3 "$CLAUDE_PLUGIN_ROOT/scripts/crm.py" find account "<회사명>"
-python3 "$CLAUDE_PLUGIN_ROOT/scripts/crm.py" list activity --where account_id=<id>
-python3 "$CLAUDE_PLUGIN_ROOT/scripts/crm.py" list opportunity --where account_id=<id>
+sales-copilot crm find account "<회사명>"
+sales-copilot crm list activity --where account_id=<id>
+sales-copilot crm list opportunity --where account_id=<id>
 cat "${SALES_COPILOT_HOME:-$HOME/.sales-copilot}/context/"{pricing,cases,objections,permissions}.md 2>/dev/null || echo "(컨텍스트 없음 — [[context]] 먼저)"
 ```
 - 미팅 일시·참석자는 **캘린더 커넥터 연결 시 초대장에서**, 미연결 시 사용자에게 확인. 어떤 미팅인지(소개/데모/협상)는 [[book-call]]이 잡을 때 기록한 유형을 따른다.
@@ -43,10 +43,10 @@ cat "${SALES_COPILOT_HOME:-$HOME/.sales-copilot}/context/"{pricing,cases,objecti
 ## 4. 직전 요약 발송 (PRE-13)
 브리핑을 미팅 직전(권장: 1시간 전) 본인에게만 보낸다. **가격 하한·금지선이 담기므로 팀 채널 금지.**
 ```bash
-python3 "$CLAUDE_PLUGIN_ROOT/scripts/post_slack.py" --to private <<'EOF'
+sales-copilot post_slack --to private <<'EOF'
 {브리핑 본문}
 EOF
-python3 "$CLAUDE_PLUGIN_ROOT/scripts/save_brief.py" --kind meeting
+sales-copilot save_brief --kind meeting
 ```
 - 미팅이 끝나면 바로 [[after-meeting]] — 회의록에서 BANT·약속을 추출하고 다음 행동을 만든다. 기회 단계 반영은 [[pipeline]].
 

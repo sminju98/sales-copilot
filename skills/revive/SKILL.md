@@ -13,15 +13,15 @@ description: 휴면·실주·기존 고객 재접촉 — 방치 리드를 찾아
 
 ## 0. 준비 — CRM에서 재접촉 풀을 로드한다
 ```bash
-python3 "$CLAUDE_PLUGIN_ROOT/scripts/doctor.py"
-python3 "$CLAUDE_PLUGIN_ROOT/scripts/crm.py" stats
+sales-copilot doctor
+sales-copilot crm stats
 ```
 - Gmail·캘린더·CRM 커넥터가 연결돼 있으면 **실측 접촉이력을 우선**하고, 없으면 로컬 CRM(`~/.sales-copilot/crm/`)의 leads·activities·opportunities 기준으로 판단한다.
 - 마지막 접촉일이 비어 있으면 지어내지 말고 **"확인 필요"**로 남긴다.
 
 ## 1. 재접촉 대상을 추출한다 (REVIVE-01 · REVIVE-07)
 ```bash
-python3 "$CLAUDE_PLUGIN_ROOT/scripts/crm.py" next-missing
+sales-copilot crm next-missing
 ```
 - **장기 미접촉 리드**(REVIVE-01): `crm.py stats`의 방치 목록 — 마지막 활동 후 기준일(기본 30일)을 넘긴 활성 리드, 시퀀스 종료 후 장기 재접촉일이 도래한 리드, 보류 후 재접촉일이 지난 리드.
 - **계약 종료·갱신시점 감지**(REVIVE-07): 수주한 기회의 계약기간·갱신일을 확인해 D-90부터 갱신 트랙에 올린다. 캘린더 연결 시 실측 일정을 우선한다.
@@ -39,7 +39,7 @@ python3 "$CLAUDE_PLUGIN_ROOT/scripts/crm.py" next-missing
 
 ## 4. 재접촉을 발송한다 (REVIVE-06 [P/A]) — 발송 게이트 필수
 ```bash
-python3 "$CLAUDE_PLUGIN_ROOT/scripts/crm.py" suppress-check --email <email>
+sales-copilot crm suppress-check --email <email>
 ```
 - 게이트 3단계: ① **수신거부·중복 검사**(suppress-check + 최근 접촉 빈도) → ② **사실 오류·과장·가짜 친밀감 검사** → ③ **approval_mode 적용**. `draft_only`거나 미설정이면 **절대 자동 발송 금지** — 초안+승인 요청까지만. 신입·타부서·외부 대행은 상신[E]까지만. 자세히 [[role]].
 - **발송 수단**: 개별 재접촉 메일·문자는 `send_email.py`/`send_sms.py`, 주기 도래 안부 일괄은 `followup_send.py`(`--dry-run`으로 대상 미리보기) — 어느 수단이든 게이트 동일.
@@ -54,8 +54,8 @@ python3 "$CLAUDE_PLUGIN_ROOT/scripts/crm.py" suppress-check --email <email>
 
 ## 6. 다음 행동 없이 끝내지 않는다
 ```bash
-python3 "$CLAUDE_PLUGIN_ROOT/scripts/crm.py" update lead <id> --json '{"next_action": "재접촉 회신 확인", "next_action_date": "YYYY-MM-DD"}'
-python3 "$CLAUDE_PLUGIN_ROOT/scripts/queue_today.py" --build
+sales-copilot crm update lead <id> --json '{"next_action": "재접촉 회신 확인", "next_action_date": "YYYY-MM-DD"}'
+sales-copilot queue_today --build
 ```
 - 모든 후보는 **발송 / 보류(재접촉일 지정) / 제외(suppressions)** 중 하나로 끝난다. 조사만 하고 닫으면 방구석 전략맨이다. 발송분은 오늘 큐([[today]])에 반영.
 

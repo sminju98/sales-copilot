@@ -14,8 +14,8 @@
 5. **웹앱 배포**(두 역할: ①`state.py` 상태 창구 ②수신거부 one-click 엔드포인트): 배포 > 새 배포 > 유형 "웹앱" > 실행 "나" / 액세스 "링크가 있는 모든 사용자"(one-click 수신거부는 익명 POST라 필수) → `…/exec` URL 복사. Apps Script **Script Properties**에 `SF_API_TOKEN`(임의 생성 — state.py 인증) + `SF_WEBAPP_URL`(이 URL — 수신거부 링크 생성용) 저장(`SF_HMAC_SECRET`은 자동 생성).
 6. **로컬 연결** — sales-copilot config에 저장:
 ```bash
-python3 "$CLAUDE_PLUGIN_ROOT/scripts/set_config.py" coldmail.sheet_webhook_url=https://script.google.com/macros/s/…/exec coldmail.sheet_webhook_secret=<SF_API_TOKEN 값>
-python3 "$CLAUDE_PLUGIN_ROOT/scripts/state.py" summary   # {"ok": true, ...} 나오면 연결 완료
+sales-copilot set_config coldmail.sheet_webhook_url=https://script.google.com/macros/s/…/exec coldmail.sheet_webhook_secret=<SF_API_TOKEN 값>
+sales-copilot state summary   # {"ok": true, ...} 나오면 연결 완료
 ```
 7. **내부 테스트 1건 (의무 — 생략 불가, W2d)**: 캠페인 첫 실행 전 반드시 **내 주소(config `me.sender_email`)로 테스트 1건을 실발송**한다 — 본인 앞 테스트용 contact+draft를 `approved`로 적재하고 `LIVE_SEND=true`로 dispatchTick 1회 → 받은 메일에서 렌더링·서명·수신거부 문구·발신자 표기를 확인. `approval_mode=auto`여도 이 단계는 생략 불가.
 8. **외부 발송 개시**: 테스트 통과 확인 후에만 외부 행을 PAUSED(`pending_review`)→READY(`approved`)로 승인 전환 + `installDispatchTrigger()`로 페이싱 트리거 설치. `LIVE_SEND`는 사용자가 명시적으로 켠 상태여야 실발송된다(기본 dry-run).

@@ -18,7 +18,7 @@ description: AI 전화 에이전트(vox.ai)로 아웃바운드 콜·인바운드
 
 ## 0. 연동 점검 — 미설정이면 안내하고 채널을 바꾼다
 ```bash
-python3 "$CLAUDE_PLUGIN_ROOT/scripts/vox_call.py" status
+sales-copilot vox_call status
 ```
 - 미설정이면 status가 출력하는 온보딩 안내(가입→대시보드에서 에이전트 구축→API 키 발급→`set_config.py`)를 전달하고 **여기서 멈춘다**. 가입·결제·키 발급은 사용자가 대시보드에서 직접 한다 — 과장 금지: "전화 기능이 있다"가 아니라 "vox.ai를 연동하면 된다"로 말한다. 그 사이 해당 접촉은 메일([[outreach]])·문자로 바로 전환해 계속 돌린다.
 - 연동돼 있으면 `vox_call.py agents`로 아웃바운드/인바운드 에이전트가 config(`vox.outbound_agent_id`·`inbound_agent_id`)와 맞는지 확인한다.
@@ -34,15 +34,15 @@ python3 "$CLAUDE_PLUGIN_ROOT/scripts/vox_call.py" status
 - 가격·할인·계약 질문이 나오면 **"담당자가 직접 연락드리겠다"로 넘기는 분기**를 플로우에 반드시 넣는다(5단계 핸드오프).
 - 플로우 JSON을 만들었으면 검증 후 vox 대시보드에서 에이전트에 반영·배포한다(플로우 편집은 대시보드가 본체):
 ```bash
-python3 "$CLAUDE_PLUGIN_ROOT/scripts/vox_call.py" validate --flow flow.json --level all
+sales-copilot vox_call validate --flow flow.json --level all
 ```
 
 ## 3. 발신 게이트 → 실행 (대외 발송 필수 절차)
-1) `python3 "$CLAUDE_PLUGIN_ROOT/scripts/crm.py" suppress-check --email <email>` + CRM 활동에서 **전화 거절·재접촉 금지 이력** 확인
+1) `sales-copilot crm suppress-check --email <email>` + CRM 활동에서 **전화 거절·재접촉 금지 이력** 확인
 2) 전화 가능 시간 — `policy.quiet_hours`(기본 21:00~08:00) 안이면 vox_call.py가 기계적으로 발신을 막는다. 예외는 수신자가 명시 요청한 경우만.
 3) approval_mode 적용 — **draft_only·미설정이면 자동 발신 금지, 콜 계획(대상·스크립트 요지)까지만.** 신입·외부·타부서는 상신[E]까지만.
 ```bash
-python3 "$CLAUDE_PLUGIN_ROOT/scripts/vox_call.py" call --to 01012345678 --var name=김OO --var company=OO사 --meta lead_id=ld_1 --email kim@example.com --dry-run
+sales-copilot vox_call call --to 01012345678 --var name=김OO --var company=OO사 --meta lead_id=ld_1 --email kim@example.com --dry-run
 ```
 - `--dry-run`으로 요청 본문을 먼저 확인하고, 승인 후 빼고 실발신. 대량(수십 건 이상)은 단건 API를 돌리지 말고 **vox 대시보드의 스프레드시트 캠페인**으로 — 페이싱·재시도는 거기가 담당(docs.tryvox.co).
 
@@ -55,9 +55,9 @@ python3 "$CLAUDE_PLUGIN_ROOT/scripts/vox_call.py" call --to 01012345678 --var na
 
 ## 6. 통화 결과 기록 — 전화만 걸고 끝나는 리드는 없다
 ```bash
-python3 "$CLAUDE_PLUGIN_ROOT/scripts/vox_call.py" result <call_id>
-python3 "$CLAUDE_PLUGIN_ROOT/scripts/crm.py" add activity --json '{"type":"call","direction":"outbound","contact_id":"<id>","summary":"<분석 요약>","result":"<미팅 확정|재통화|거절|부재>"}'
-python3 "$CLAUDE_PLUGIN_ROOT/scripts/crm.py" update lead <id> --json '{"next_action":"<다음 행동>","next_action_date":"YYYY-MM-DD"}'
+sales-copilot vox_call result <call_id>
+sales-copilot crm add activity --json '{"type":"call","direction":"outbound","contact_id":"<id>","summary":"<분석 요약>","result":"<미팅 확정|재통화|거절|부재>"}'
+sales-copilot crm update lead <id> --json '{"next_action":"<다음 행동>","next_action_date":"YYYY-MM-DD"}'
 ```
 - 미팅 확정이면 [[book-call]]로 초대장까지, 거절이면 suppressions 반영, 부재면 재시도 시점을 next_action으로.
 

@@ -13,10 +13,10 @@ description: 영업 지표 — 행동량·전환량 깔때기(발굴→접촉→
 
 ## 0. 준비 — 데이터 로드
 ```bash
-python3 "$CLAUDE_PLUGIN_ROOT/scripts/crm.py" stats
-python3 "$CLAUDE_PLUGIN_ROOT/scripts/crm.py" list activity --limit 200
-python3 "$CLAUDE_PLUGIN_ROOT/scripts/crm.py" list lead
-python3 "$CLAUDE_PLUGIN_ROOT/scripts/crm.py" list opportunity
+sales-copilot crm stats
+sales-copilot crm list activity --limit 200
+sales-copilot crm list lead
+sales-copilot crm list opportunity
 ```
 - CRM·Gmail·캘린더 커넥터가 연결돼 있으면 **실측 로그(발송·회신·미팅)를 우선**, 미연결이면 로컬 CRM(`~/.sales-copilot/crm/`의 leads/activities/opportunities)으로 집계한다.
 - 기간 기본값은 이번 주(월~일). 사용자가 기간을 지정하면 그 기간.
@@ -37,15 +37,15 @@ python3 "$CLAUDE_PLUGIN_ROOT/scripts/crm.py" list opportunity
 
 ## 2. ★핵심 KPI — 다음 행동 보유율 (§8)
 ```bash
-python3 "$CLAUDE_PLUGIN_ROOT/scripts/crm.py" next-missing
+sales-copilot crm next-missing
 ```
 활성 리드·기회 중 next_action/next_action_date가 지정된 비율. **100%에 가깝게 유지한다.** 미보유 건은 리포트에 이름까지 박고 즉시 [[today]] 큐에 올린다 — 다음 행동 없는 리드는 방치된 데이터다.
 
 ## 3. 주간 리포트 (§7 매주)
 매주 블록 순서 그대로 채운다: **신규 리드 수 / 첫 접촉 수 / 후속 접촉 수 / 회신·긍정 회신 / 예약된 콜 / 생성된 영업기회 / 수주·실주와 그 이유 / 마케팅 보충 필요성.** 지난주 리포트가 `data/briefs/`에 있으면 증감을 비교하고, 없으면 비교를 생략한다(추정 금지).
 ```bash
-python3 "$CLAUDE_PLUGIN_ROOT/scripts/save_brief.py" --kind weekly    # 리포트 저장
-python3 "$CLAUDE_PLUGIN_ROOT/scripts/post_slack.py" --to private     # 본문은 stdin. 팀 공유는 --to team([P])
+sales-copilot save_brief --kind weekly    # 리포트 저장
+sales-copilot post_slack --to private     # 본문은 stdin. 팀 공유는 --to team([P])
 ```
 매주 자동으로 돌리려면 [[routine]]에서 `schedule_brief.py --kind weekly` 레시피로 등록한다.
 

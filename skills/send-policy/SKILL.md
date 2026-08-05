@@ -13,8 +13,8 @@ description: 법·발송정책 엔진 — 국내 발송의 '영업 메일 판정
 
 ## 0. 준비 — 정책 장부를 점검한다 (장부 없으면 발송 없음)
 ```bash
-python3 "$CLAUDE_PLUGIN_ROOT/scripts/doctor.py"
-python3 "$CLAUDE_PLUGIN_ROOT/scripts/crm.py" stats
+sales-copilot doctor
+sales-copilot crm stats
 ```
 - doctor가 수신거부 목록·CRM 파일·설정을 점검한다. config의 `approval_mode`·`send_scope`·`max_touches`(기본 5회)와 `context/permissions.md`(발신 계정·서명)를 로드.
 - **이중 경로**: Gmail 등 커넥터 연결 시 실제 반송·수신거부·신고 신호를 우선 사용, 미연결 시 로컬 `~/.sales-copilot/crm/suppressions.jsonl`이 단일 기준.
@@ -33,8 +33,8 @@ python3 "$CLAUDE_PLUGIN_ROOT/scripts/crm.py" stats
 - **판정이 애매하면 발송 포기가 아니라 문면 수정이 기본 동작.** ①·②에 맞게 — 실명 개인화를 넣고 홍보 나열을 거래 제안 한 줄로 바꿔서 — 고쳐서 보낸다. 어디를 어떻게 고칠지 수정 지시(가능하면 수정본)까지 만들어 [[outreach]]에 바로 돌려준다.
 - 근거 문서(조문·판정표·표시의무·발송 위생 상세):
 ```bash
-cat "$CLAUDE_PLUGIN_ROOT/skills/outreach/references/08-legal-kr.md"        # 국내법: 광고성 vs 개별 제안 판정·표시의무
-cat "$CLAUDE_PLUGIN_ROOT/skills/outreach/references/07-deliverability.md"  # 발송 위생·램프업·도메인 평판
+cat "$(sales-copilot --root)/skills/outreach/references/08-legal-kr.md"        # 국내법: 광고성 vs 개별 제안 판정·표시의무
+cat "$(sales-copilot --root)/skills/outreach/references/07-deliverability.md"  # 발송 위생·램프업·도메인 평판
 ```
 
 ## 2. 광고성 전환 판정 — 선을 넘는 순간 의무가 생긴다 (SAFE-03)
@@ -49,7 +49,7 @@ cat "$CLAUDE_PLUGIN_ROOT/skills/outreach/references/07-deliverability.md"  # 발
 ## 4. 출처·연락근거를 기록한다 (SAFE-01·SAFE-02)
 연락처마다 3필드가 없으면 발송 불가가 기본: **출처(source) · 연락 가능 근거(contact_basis) · 허용 채널(channels_ok)**.
 ```bash
-python3 "$CLAUDE_PLUGIN_ROOT/scripts/crm.py" update contact <id> --json '{"source":"명함 교환(2026-07 ○○포럼)","contact_basis":"직접 교환·명함의 업무 이메일","channels_ok":["email"]}'
+sales-copilot crm update contact <id> --json '{"source":"명함 교환(2026-07 ○○포럼)","contact_basis":"직접 교환·명함의 업무 이메일","channels_ok":["email"]}'
 ```
 - 인정하는 출처: 명함 교환 / 소개(소개자 기록) / 인바운드 문의 / 기존 거래 / 웹에 공개된 회사 대표·업무 주소(출처 URL 기록) / **정식 구독한 B2B 리드 DB**(서비스명·추출일 기록 — [[find-leads]]의 구매 경로). **크롤링 수집·패턴 추측 생성·출처 불명 주소는 등록 단계에서 거부.**
 - 출처가 기억 안 나면 지어내지 말고 `"source":"확인 필요"`로 남기고 발송 게이트에서 차단한다.
@@ -57,8 +57,8 @@ python3 "$CLAUDE_PLUGIN_ROOT/scripts/crm.py" update contact <id> --json '{"sourc
 ## 5. 발송 게이트 — 모든 대외 발송의 공통 관문 (SAFE-04·SAFE-05·SAFE-06)
 [[outreach]]·[[find-leads]]·[[revive]] 등 발송이 있는 스킬은 발송 직전 반드시 이 3단계를 통과한다.
 ```bash
-python3 "$CLAUDE_PLUGIN_ROOT/scripts/crm.py" suppress-check --email kim@acme.co.kr
-python3 "$CLAUDE_PLUGIN_ROOT/scripts/crm.py" find activity kim@acme.co.kr
+sales-copilot crm suppress-check --email kim@acme.co.kr
+sales-copilot crm find activity kim@acme.co.kr
 ```
 1. **수신거부·중복·빈도 검사** — suppress-check 통과 + 활동 이력으로 같은 사람·같은 회사 중복 발송과 접촉 횟수 확인. `max_touches`(기본 5회) 도달 또는 과도한 간격 위반이면 차단 (SAFE-05).
 2. **영업 메일 판정(§1) + 사실·표기 검사** — 5조건 판정 후, 문안의 **사실(확인된 것) vs 추론(가설)** 구분·추론은 단정하지 않는 표현으로. **누가(발신자·소속) 왜(연락 경위·목적) 무엇을** 원하는지 첫 화면에서 명확해야 통과 (SAFE-06). 광고성 판정이면 §2 의무((광고) 표기·동의 경로) 확인.
@@ -67,7 +67,7 @@ python3 "$CLAUDE_PLUGIN_ROOT/scripts/crm.py" find activity kim@acme.co.kr
 ### 5-1. ★하드 게이트 — 발송량·시간대·양식은 코드가 센다 (SAFE-05 강제화)
 위 3단계는 모델이 읽고 판정한다. **발송량 상한·야간 금지·승인 양식 동일성은 판단에 맡기지 않고 `gates.py`가 파일 상태로 센다.** exit code 2면 그 자리에서 발송을 중단한다 — 우회 금지.
 ```bash
-G="$CLAUDE_PLUGIN_ROOT/scripts/gates.py"
+G="$(sales-copilot --root)/scripts/gates.py"
 python3 "$G" check-send --channel email --count 40 --template-id <양식ID>   # 발송 직전
 python3 "$G" record-send --channel email --count 40 --template-id <양식ID>  # 실제 발송 후 누계 반영
 ```
@@ -79,7 +79,7 @@ python3 "$G" record-send --channel email --count 40 --template-id <양식ID>  # 
 
 ## 6. 수신거부·반송·평판을 자동 반영한다 (SAFE-04·SAFE-07·SAFE-08)
 ```bash
-python3 "$CLAUDE_PLUGIN_ROOT/scripts/crm.py" suppress add --email kim@acme.co.kr --reason "회신으로 수신거부(2026-07-26)"
+sales-copilot crm suppress add --email kim@acme.co.kr --reason "회신으로 수신거부(2026-07-26)"
 ```
 - **수신거부는 형태 불문 즉시 등록** — 회신 문구, 원클릭 버튼, 전화로 한 말 전부. [[classify-reply]]가 감지하면 이 목록에 동기화되고, **채널·시퀀스 전체에 하나의 목록으로 공유**된다 (SAFE-04). 등록과 동시에 진행 중 시퀀스 예약도 취소.
 - **반송(하드바운스) 주소는 자동 제외** — `suppress add --reason "반송"` + 연락처에 무효 표기. 반복 발송은 평판만 깎는다 (SAFE-07).
@@ -92,7 +92,7 @@ python3 "$CLAUDE_PLUGIN_ROOT/scripts/crm.py" suppress add --email kim@acme.co.kr
 ## 8. 접촉 불가 리드는 버리지 않고 경로를 바꾼다 (SAFE-10)
 차단 판정은 끝이 아니라 분기다. 이메일 불가 → **소개 요청**(공통 지인 경로) / **전화([[phone-call]])·공개 채널**(해당 채널 정책 내) / **사용자 수동 접촉** / 근거 생길 때까지 **보류** 중 하나를 골라 다음 행동으로 기록한다. 모든 리드에 다음 행동 — 차단된 리드도 예외 없다.
 ```bash
-python3 "$CLAUDE_PLUGIN_ROOT/scripts/crm.py" update lead <id> --json '{"status":"email_blocked","next_action":"김○○ 소개 경로 확인","next_action_date":"2026-07-28"}'
+sales-copilot crm update lead <id> --json '{"status":"email_blocked","next_action":"김○○ 소개 경로 확인","next_action_date":"2026-07-28"}'
 ```
 
 ## 출력 (영업 메일 판정 + 발송 게이트)

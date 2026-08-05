@@ -7,7 +7,7 @@
 
 - **대량 트랙(Apps Script 대장)**: cold 발송 성공 시 엔진이 자동으로 **7일 후 fu1**을 큐잉한다(`followup_queue`). 팔로업 원고는 05에서 이미 작성돼 `drafts`에 있다. **대장 트랙의 자동 팔로업은 1회(fu1)로 제한** — 발송·페이싱·수신거부 게이트를 cold와 동일하게 통과한다.
 - **개별·소량 트랙(send_email.py·커넥터)**: outreach의 5터치 시퀀스(1·3·6·10·15일차, config `cadence`)를 따른다. 각 터치는 발송 게이트를 매번 다시 통과한다.
-- 오늘 팔로업 대상 조회: `python3 "$CLAUDE_PLUGIN_ROOT/scripts/state.py" followup_due` (대장) + `queue_today.py` (개별).
+- 오늘 팔로업 대상 조회: `sales-copilot state followup_due` (대장) + `queue_today.py` (개별).
 - 답장이 오면 그 상대의 팔로업은 **즉시 취소**(큐에서 제거 + 로컬 next_action 갱신).
 
 ## 답장 감지 (Apps Script가 시트로 추적, Claude가 분류)

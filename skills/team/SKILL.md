@@ -21,16 +21,16 @@ description: 팀장·임원용 조직관리 — 팀원별 현황 취합(접촉�
 ## 0. 준비 — 권한 게이트 + 팀 설정 로드
 ```bash
 cat "${SALES_COPILOT_HOME:-$HOME/.sales-copilot}/config.json" 2>/dev/null || echo "(설정 없음 — setup 먼저)"
-python3 "$CLAUDE_PLUGIN_ROOT/scripts/crm.py" stats
+sales-copilot crm stats
 ```
 - **rank 게이트**: config `me.rank`가 `team_lead`·`sales_head`·`exec`·`founder`가 아니면 여기서 종료 — "팀 현황은 팀장 이상 열람입니다. 본인 현황은 [[today]]·[[metrics]]로 보세요" 한 줄 안내만 하고 어떤 팀원 데이터도 조회·요약하지 않는다. 판정 규칙은 [[role]].
 - config `team.members`(name·slack·담당범위)와 `team.watch_channels`를 로드한다. 비어 있으면 지어내지 말고 [[setup]]으로 유도 — 슬랙 채널 참여자·CRM owner 필드에서 후보를 추려 "이렇게 등록해놓을까요" 없이 **초안을 만들어 놓고 확인만 요청**한다.
 
 ## 1. 팀원별 현황 취합 (묻지 않고 실행)
 ```bash
-python3 "$CLAUDE_PLUGIN_ROOT/scripts/crm.py" list activity --where owner=<이름> --limit 100
-python3 "$CLAUDE_PLUGIN_ROOT/scripts/crm.py" list lead --where owner=<이름>
-python3 "$CLAUDE_PLUGIN_ROOT/scripts/crm.py" next-missing
+sales-copilot crm list activity --where owner=<이름> --limit 100
+sales-copilot crm list lead --where owner=<이름>
+sales-copilot crm next-missing
 ```
 - 소스 3중: ①**CRM 실측**(activities·leads·opportunities의 owner별 집계) ②**슬랙 커넥터**(`sources.use_slack` 켜짐 + watch_channels만 — 진행 보고·고객 반응·막힌 것) ③**노션·드라이브 커넥터**(`use_notion`/`use_drive` — 제안서·회의록·주간보고). 커넥터 미연결이면 로컬 CRM만으로 집계하고 "슬랙/노션 연결 시 실측 보강"을 남긴다(이중 경로).
 - 팀원별로 계산: **접촉량**(신규+후속) · **후속률**(기일 내 후속 실행 비율) · **방치 리드**(stale_days 초과) · **정체 기회**(단계 변화 없이 기준일 초과) · **다음 행동 보유율**. 데이터에 없으면 "집계 불가" — 추정 금지.
@@ -52,9 +52,9 @@ python3 "$CLAUDE_PLUGIN_ROOT/scripts/crm.py" next-missing
 
 ## 6. 주간 팀 리포트 ([[metrics]] 연계)
 ```bash
-python3 "$CLAUDE_PLUGIN_ROOT/scripts/save_brief.py" --kind team        # 팀 공유 가능 버전(개인 비교 없음)
-python3 "$CLAUDE_PLUGIN_ROOT/scripts/save_brief.py" --kind private     # 개인별 상세(나만 보기)
-python3 "$CLAUDE_PLUGIN_ROOT/scripts/post_slack.py" --to private --sensitive --title "팀 현황(나만 보기)" --file <path>
+sales-copilot save_brief --kind team        # 팀 공유 가능 버전(개인 비교 없음)
+sales-copilot save_brief --kind private     # 개인별 상세(나만 보기)
+sales-copilot post_slack --to private --sensitive --title "팀 현황(나만 보기)" --file <path>
 ```
 - [[metrics]]의 깔때기 17종을 **팀 합산 + 팀원별 분해**로 만든다. 팀 채널 공유 버전은 합산·익명 수준만([P]), 팀원별 비교는 private 버전에만. 매주 자동은 [[routine]]으로 등록.
 

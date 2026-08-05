@@ -18,8 +18,8 @@ description: 명함 이미지가 보이는 즉시 내장 파이프라인으로 �
 
 ## 0. 준비 — 명함이 보이면 바로 시작한다 (CARD-01)
 ```bash
-python3 "$CLAUDE_PLUGIN_ROOT/scripts/doctor.py"
-python3 "$CLAUDE_PLUGIN_ROOT/scripts/find_docs.py"
+sales-copilot doctor
+sales-copilot find_docs
 ```
 - 입력: 사용자가 올린 이미지 + `find_docs.py`·`sources.cards_inbox` 폴더에서 발견한 명함 사진(CARD-01). **"등록할까요?"라고 묻지 않는다** — 발견 즉시 1~5단계를 돌리고 결과로 통보한다.
 - ⚠️ 별도 명함관리 플러그인(myeongham-manager)이 설치돼 있으면 같은 명함을 그쪽 card-scan으로 또 돌리지 않는다 — **이중 등록**된다(기본은 이 내장 파이프라인 하나만).
@@ -31,11 +31,11 @@ python3 "$CLAUDE_PLUGIN_ROOT/scripts/find_docs.py"
 
 ## 2. 등록 — CRM·구글시트·vCard까지 한 번에 (CARD-06~08·19~20) [A]
 ```bash
-python3 "$CLAUDE_PLUGIN_ROOT/scripts/crm.py" dedupe contact --json '{"name":"김철수","email":"cskim@acme.co.kr","phone":"010-1234-5678"}'
-python3 "$CLAUDE_PLUGIN_ROOT/scripts/crm.py" add account --json '{"name":"에이스컴퍼니","industry":"제조","source":"명함"}'
+sales-copilot crm dedupe contact --json '{"name":"김철수","email":"cskim@acme.co.kr","phone":"010-1234-5678"}'
+sales-copilot crm add account --json '{"name":"에이스컴퍼니","industry":"제조","source":"명함"}'
 echo '{"name":"김철수","company":"에이스컴퍼니","title":"마케팅팀장","email":"cskim@acme.co.kr","phone":"010-1234-5678","met_at":"2026-07-25 스타트업 밋업","card_image":"IMG_0012.jpg"}' \
-  | python3 "$CLAUDE_PLUGIN_ROOT/scripts/sheet_append.py"
-python3 "$CLAUDE_PLUGIN_ROOT/scripts/export_vcard.py" --since "$(date +%F)"
+  | sales-copilot sheet_append
+sales-copilot export_vcard --since "$(date +%F)"
 ```
 - 중복 후보가 나오면 새로 만들지 말고 병합한다(CARD-06) — `sheet_append.py`가 로컬 CRM upsert(이메일·전화·이름+회사 일치 시 병합)를 처리한다. 회사명은 (주)·Inc.·한/영 표기를 정규화해 계정 하나로 모은다(CARD-07). 회사·연락처 레코드를 쌍으로 생성하고(CARD-08) 명함 원본 이미지 경로를 남긴다(CARD-20).
 - **구글시트**: `cards.sheet_webhook_url` 설정 시 자동 저장, 미설정이면 로컬 CRM만으로 완결하고 조용히 넘어간다(CARD-19). 연결은 `apps-script/cards/Code.gs` 배포 → `set_config.py cards.sheet_webhook_url=... cards.sheet_webhook_secret=...`.
@@ -50,7 +50,7 @@ python3 "$CLAUDE_PLUGIN_ROOT/scripts/export_vcard.py" --since "$(date +%F)"
 - 첫 후속 연락 필요 여부를 판정한다(CARD-14): 영업 가능성·약속이 있으면 24~48시간 내 감사 메시지, 단순 교환이면 관계 유지 주기로 → [[relationships]].
 - 자료 송부·소개·답변 등 약속한 것은 태스크로 만들고(CARD-17), **모든 등록 건에 다음 연락일과 다음 행동을 박는다**(CARD-18). 발송 대상은 오늘 큐에 올린다 → [[today]].
 ```bash
-python3 "$CLAUDE_PLUGIN_ROOT/scripts/crm.py" add relationship --json '{"contact":"김철수","met_at":"2026-07-25 스타트업 밋업","talked":"배너 대량 제작 애로(사용자 확인)","class":"잠재고객","next_action":"감사 메시지+소개자료 발송","next_action_date":"2026-07-27"}'
+sales-copilot crm add relationship --json '{"contact":"김철수","met_at":"2026-07-25 스타트업 밋업","talked":"배너 대량 제작 애로(사용자 확인)","class":"잠재고객","next_action":"감사 메시지+소개자료 발송","next_action_date":"2026-07-27"}'
 ```
 
 ## 5. 후속 초안·발송 — 게이트 통과 후에만 (CARD-15~16) [P] · 체인 모드 단계
@@ -58,10 +58,10 @@ python3 "$CLAUDE_PLUGIN_ROOT/scripts/crm.py" add relationship --json '{"contact"
 - 초안은 묻지 말고 만들어 둔다: `templates/messages/`의 6종(greeting/sales/followup × sms/email)을 베이스로, 만난 자리 + 실제 나눈 대화 1포인트 + 부담 낮은 CTA(CARD-15). 고객향 문면은 정중·팩트 기반 — 나눈 적 없는 대화·가짜 친밀감·과장 금지.
 - **발송 게이트(필수)**: ① 수신거부·중복 검사 ② 사실 오류 검사(이름·직책·대화 근거) ③ `me.approval_mode` 적용(CARD-16) — auto만 자동 발송, batch/per_item은 승인 후, **draft_only·미설정이면 절대 자동 발송 금지(초안까지만)**. 타부서·외부·범위 밖은 [E] 상신까지만. 자세히 [[send-policy]].
 ```bash
-python3 "$CLAUDE_PLUGIN_ROOT/scripts/crm.py" suppress-check --email cskim@acme.co.kr
-python3 "$CLAUDE_PLUGIN_ROOT/scripts/send_email.py" --to cskim@acme.co.kr --subject "어제 밋업에서 인사드린 ..." --body-file draft.txt --dry-run   # 미리보기 → 승인 후 --dry-run 제거
-python3 "$CLAUDE_PLUGIN_ROOT/scripts/send_sms.py" --to 010-1234-5678 --text "..." --dry-run
-python3 "$CLAUDE_PLUGIN_ROOT/scripts/crm.py" add activity --json '{"contact":"김철수","type":"email","summary":"감사 메시지 발송","result":"발송됨"}'
+sales-copilot crm suppress-check --email cskim@acme.co.kr
+sales-copilot send_email --to cskim@acme.co.kr --subject "어제 밋업에서 인사드린 ..." --body-file draft.txt --dry-run   # 미리보기 → 승인 후 --dry-run 제거
+sales-copilot send_sms --to 010-1234-5678 --text "..." --dry-run
+sales-copilot crm add activity --json '{"contact":"김철수","type":"email","summary":"감사 메시지 발송","result":"발송됨"}'
 ```
 - 두 스크립트 모두 수신거부·야간(quiet hours) 게이트가 내장돼 있다. 문자·SMTP 미설정이면 초안까지 만들어 두고 설정 경로(`set_config.py sms.* / email_send.*`) 한 줄만 안내한다. 발송·승인 결과는 activity로 기록하고 다음 연락일을 갱신한다.
 

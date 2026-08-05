@@ -13,7 +13,7 @@ description: 인바운드 문의를 감지해 기존기록·적합도·긴급도
 
 ## 0. 준비 — 문의와 컨텍스트를 로드한다 (INB-01)
 ```bash
-python3 "$CLAUDE_PLUGIN_ROOT/scripts/doctor.py"
+sales-copilot doctor
 ```
 - **문의 소스**: Gmail·폼·CRM 커넥터가 연결돼 있으면 미답변 신규 문의(홈페이지·메일·폼·소개)를 우선 조회한다. 미연결이면 사용자가 붙여넣은 문의 본문·포워딩 메일로 동작하고 로컬 CRM(`~/.sales-copilot/`)에 기록한다 (INB-01).
 - **전화 문의**: vox.ai 인바운드 연동 시 대표번호·발급번호로 걸려온 전화는 AI 에이전트가 응대·자격질문(INB-10)·미팅 예약(INB-11)까지 하고, **통화 후 분석 웹훅의 요약·추출값이 이 스킬의 문의 본문**이 된다 — 연동·응대 플로우·핸드오프 기준은 [[phone-call]].
@@ -22,9 +22,9 @@ python3 "$CLAUDE_PLUGIN_ROOT/scripts/doctor.py"
 
 ## 1. 기존기록·수신거부부터 확인한다 (INB-02)
 ```bash
-python3 "$CLAUDE_PLUGIN_ROOT/scripts/crm.py" find contact "<문의자 이메일 또는 이름>"
-python3 "$CLAUDE_PLUGIN_ROOT/scripts/crm.py" find account "<회사명>"
-python3 "$CLAUDE_PLUGIN_ROOT/scripts/crm.py" suppress-check --email "<문의자 이메일>"
+sales-copilot crm find contact "<문의자 이메일 또는 이름>"
+sales-copilot crm find account "<회사명>"
+sales-copilot crm suppress-check --email "<문의자 이메일>"
 ```
 과거 접촉·거래·기존 담당자가 있으면 첫 답변의 톤과 배정이 완전히 달라진다("처음 뵙겠습니다" 사고 방지). 수신거부 이력이 있어도 상대가 먼저 문의한 건에 대한 답장은 가능하되, 이력을 답변 초안에 표시하고 영업성 후속은 걸지 않는다.
 
@@ -50,8 +50,8 @@ python3 "$CLAUDE_PLUGIN_ROOT/scripts/crm.py" suppress-check --email "<문의자 
 ## 6. 발송 게이트 → 기록 (대외 발송 필수 절차)
 ① `crm.py suppress-check --email` 재확인 ② **사실 검사** — 가격·기능·사례·일정이 context와 일치하는지, 과장·단정·가짜 친밀감 제거 ③ **approval_mode 적용** — auto여도 `send_scope`에 이메일 발송 권한이 없으면 초안까지만. **DRAFT ONLY·미설정이면 절대 자동 발송 금지.** 타부서·외부 대행은 답변 초안을 담당 영업에게 전달하는 것까지만.
 ```bash
-python3 "$CLAUDE_PLUGIN_ROOT/scripts/crm.py" add lead --json '{"name":"<문의자>","company":"<회사>","source":"inbound","status":"open","next_action":"첫 답변 회신 확인","next_action_date":"<SLA 기한>"}'
-python3 "$CLAUDE_PLUGIN_ROOT/scripts/crm.py" add activity --json '{"type":"email","direction":"inbound","summary":"<문의 요지>","result":"첫 답변 발송|초안 대기"}'
+sales-copilot crm add lead --json '{"name":"<문의자>","company":"<회사>","source":"inbound","status":"open","next_action":"첫 답변 회신 확인","next_action_date":"<SLA 기한>"}'
+sales-copilot crm add activity --json '{"type":"email","direction":"inbound","summary":"<문의 요지>","result":"첫 답변 발송|초안 대기"}'
 ```
 
 ## 7. SLA 재알림과 미성숙 리드 (INB-14·INB-15)

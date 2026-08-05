@@ -27,7 +27,7 @@ import re
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from common import CRM_DIR, load_config, now_iso  # noqa: E402
+from common import CRM_DIR, file_lock, load_config, now_iso  # noqa: E402
 
 # 엔티티 → (id 접두사, 저장 파일)
 ENTITIES = {
@@ -77,12 +77,26 @@ def _append(path, rec):
 
 
 def _rewrite(path, rows):
+    """전체 재작성. 임시 파일에 다 쓰고 원자적으로 갈아끼운다.
+
+    임시 파일 이름에 pid 를 붙인다 — 고정 이름이면 두 프로세스가 같은 tmp 를
+    밟아 서로의 절반을 덮어쓴다. fsync 까지 해야 갈아끼우기 전에 디스크에 닿는다.
+    """
     os.makedirs(CRM_DIR, exist_ok=True)
-    tmp = path + ".tmp"
-    with open(tmp, "w", encoding="utf-8") as f:
-        for r in rows:
-            f.write(json.dumps(r, ensure_ascii=False) + "\n")
-    os.replace(tmp, path)
+    tmp = f"{path}.{os.getpid()}.tmp"
+    try:
+        with open(tmp, "w", encoding="utf-8") as f:
+            for r in rows:
+                f.write(json.dumps(r, ensure_ascii=False) + "\n")
+            f.flush()
+            os.fsync(f.fileno())
+        os.replace(tmp, path)
+    finally:
+        if os.path.exists(tmp):
+            try:
+                os.remove(tmp)
+            except OSError:
+                pass
 
 
 def _next_id(entity, rows):
@@ -134,6 +148,17 @@ def _days_since(iso):
 
 # ---------- 핵심 동작 ----------
 def add(entity, data):
+    """레코드 추가.
+
+    채번이 '전체를 읽어 다음 번호를 정하는' 방식이라, 잠그지 않으면 동시에 들어온
+    두 건이 같은 id 를 받는다. 중복 id 는 오류 없이 퍼지고 update() 가 첫 매치에서
+    멈추므로, 이후 갱신이 한쪽에만 가서 고객 이력이 조용히 갈라진다.
+    """
+    with file_lock(_path(entity)):
+        return _add_locked(entity, data)
+
+
+def _add_locked(entity, data):
     rows = read_all(entity)
     rec = dict(data)
     rec["id"] = _next_id(entity, rows)
@@ -143,6 +168,16 @@ def add(entity, data):
 
 
 def update(entity, rec_id, patch):
+    """부분 갱신.
+
+    read_all → 메모리 수정 → 전체 재작성 사이에 남이 쓰면 그 쓰기가 통째로 사라진다.
+    구간 전체를 잠가야 한다 — 재작성만 잠그면 이미 낡은 뷰를 쓰게 된다.
+    """
+    with file_lock(_path(entity)):
+        return _update_locked(entity, rec_id, patch)
+
+
+def _update_locked(entity, rec_id, patch):
     rows = read_all(entity)
     hit = None
     for r in rows:

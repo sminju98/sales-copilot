@@ -27,8 +27,8 @@ description: 콜드메일·아웃바운드 엔진 — 대상 발굴→리서치�
 ## 워크플로 7단계 (캠페인 요청이 오면 이 순서로 — 1~6은 묻지 않고 실행)
 
 ```bash
-python3 "$CLAUDE_PLUGIN_ROOT/scripts/state.py" summary       # 철칙 1 — 대장 연결·오늘 발송/상한/남은 큐
-python3 "$CLAUDE_PLUGIN_ROOT/scripts/queue_today.py"
+sales-copilot state summary       # 철칙 1 — 대장 연결·오늘 발송/상한/남은 큐
+sales-copilot queue_today
 cat "${SALES_COPILOT_HOME:-$HOME/.sales-copilot}/context/"{company,products,icp,cases,objections,message-style}.md 2>/dev/null || echo "(컨텍스트 없음 — [[context]] 먼저)"
 ```
 1. **[온보딩]** `state.py summary`가 degraded면 → `references/09-setup.md`로 Apps Script·시트 연결을 대화로 안내. 이미 연결이면 skip. (연결 없이도 3~5는 진행 가능 — 적재만 보류.)
@@ -44,7 +44,7 @@ cat "${SALES_COPILOT_HOME:-$HOME/.sales-copilot}/context/"{company,products,icp,
 - **ⓐ 대량 캠페인 = Apps Script 대장(기본).** drafts 적재 → 사용자 승인으로 READY(`approved`) 전환 → `dispatchTick()`이 페이싱·일 상한·suppression·국내 판정 게이트를 걸고 자동 발송. 답장·수신거부·팔로업(7일 fu1)도 엔진이 감지·집행(`references/06-followup.md`·`07-deliverability.md`).
 - **ⓑ 개별·소량 후속 = send_email.py(게이트) 또는 Gmail 커넥터.** 1·3·6·10·15일차 5터치 시퀀스(config `cadence`, OUT-08)를 리드별로: 3일차 다른 근거 → 6일차 사례 제공 → 10일차 **전화([[phone-call]])·소개 경로**(OUT-09) → 15일차 마지막 확인. 매 터치마다 발송 게이트(아래)를 다시 통과.
 ```bash
-python3 "$CLAUDE_PLUGIN_ROOT/scripts/send_email.py" --to kim@acme.co.kr --subject "..." --body-file draft.txt --dry-run
+sales-copilot send_email --to kim@acme.co.kr --subject "..." --body-file draft.txt --dry-run
 ```
 - 시퀀스 종료 후(OUT-19): 장기 재접촉일을 리드에 기록 — 이후 회수는 [[revive]].
 
@@ -57,9 +57,9 @@ python3 "$CLAUDE_PLUGIN_ROOT/scripts/send_email.py" --to kim@acme.co.kr --subjec
 ## 발송 게이트 (OUT-10~13) — 순서 고정, 생략 금지
 
 ```bash
-python3 "$CLAUDE_PLUGIN_ROOT/scripts/state.py" check kim@acme.co.kr          # 시트: 이미 보냈나/수신거부인가
-python3 "$CLAUDE_PLUGIN_ROOT/scripts/crm.py" suppress-check --email kim@acme.co.kr
-python3 "$CLAUDE_PLUGIN_ROOT/scripts/crm.py" dedupe contact --json '{"email":"kim@acme.co.kr"}'
+sales-copilot state check kim@acme.co.kr          # 시트: 이미 보냈나/수신거부인가
+sales-copilot crm suppress-check --email kim@acme.co.kr
+sales-copilot crm dedupe contact --json '{"email":"kim@acme.co.kr"}'
 ```
 1. **수신거부·중복 검사(OUT-12)** — 시트(`state.py check`)와 로컬(suppress-check) 양쪽. 실패면 그 대상 제외. degraded여도 진행은 가능 — 실제 강제는 dispatchTick이 발송 시 한다(state.py는 최적화지 안전장치가 아니다).
 2. **국내면 영업 메일 판정** — [[send-policy]] §1의 5조건. 애매하면 발송 포기가 아니라 **문면 수정**. 광고성이면 (광고)+동의 경로 또는 전화·소개 전환.
@@ -71,8 +71,8 @@ python3 "$CLAUDE_PLUGIN_ROOT/scripts/crm.py" dedupe contact --json '{"email":"ki
 ## 기록·무응답 이후 (OUT-15~18, OUT-20)
 
 ```bash
-python3 "$CLAUDE_PLUGIN_ROOT/scripts/crm.py" add activity --json '{"type":"email","lead_id":"<id>","direction":"out","summary":"1일차 첫 메일","result":"sent"}'
-python3 "$CLAUDE_PLUGIN_ROOT/scripts/crm.py" update lead <id> --json '{"next_action":"3일차 후속","next_action_date":"<YYYY-MM-DD>"}'
+sales-copilot crm add activity --json '{"type":"email","lead_id":"<id>","direction":"out","summary":"1일차 첫 메일","result":"sent"}'
+sales-copilot crm update lead <id> --json '{"next_action":"3일차 후속","next_action_date":"<YYYY-MM-DD>"}'
 ```
 - 발송·반송·회신 상태를 activity로 기록(OUT-15)하고 전 대상의 next_action 갱신 — **다음 행동 없는 리드 0건이 종료 조건.**
 - 무응답이면 다음 후속 자동 예약(OUT-16) — 같은 말 반복 금지, **다른 각도**(OUT-17). 비담당자면 소개 요청 한 통으로 전환(OUT-18). **회신이 오면 즉시 남은 시퀀스를 멈추고 [[classify-reply]]로** — 팔로업 큐도 취소.
@@ -80,7 +80,7 @@ python3 "$CLAUDE_PLUGIN_ROOT/scripts/crm.py" update lead <id> --json '{"next_act
 
 ## 참조 문서 (필요할 때만 읽어라 — progressive disclosure)
 
-| 단계 | 파일 (`$CLAUDE_PLUGIN_ROOT/skills/outreach/references/`) |
+| 단계 | 파일 (`$(sales-copilot --root)/skills/outreach/references/`) |
 |---|---|
 | 입력 정규화 | `01-intake.md` |
 | 발굴·게이트·트랙분기 | `02-prospecting.md` |

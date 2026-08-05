@@ -13,8 +13,8 @@ description: 미팅 결과를 제안서·견적으로 바꾸고 협상·수주/�
 
 ## 0. 준비 — 기회·가격표·사례를 로드한다 (근거 없으면 제안 불가)
 ```bash
-python3 "$CLAUDE_PLUGIN_ROOT/scripts/crm.py" find opportunity "<회사/담당자>"
-python3 "$CLAUDE_PLUGIN_ROOT/scripts/crm.py" get opportunity <id>
+sales-copilot crm find opportunity "<회사/담당자>"
+sales-copilot crm get opportunity <id>
 cat "${SALES_COPILOT_HOME:-$HOME/.sales-copilot}/context/"{pricing,cases,objections,permissions}.md 2>/dev/null || echo "(컨텍스트 없음)"
 ```
 - 기회 레코드가 없으면 [[pipeline]]에서 전환부터. 미팅 직후라면 [[after-meeting]]의 BANT·약속 추출 결과를 입력으로 받는다.
@@ -33,12 +33,12 @@ cat "${SALES_COPILOT_HOME:-$HOME/.sales-copilot}/context/"{pricing,cases,objecti
 ## 3. 견적 발송 게이트 [P] (DEAL-06)
 발송 전 반드시 순서대로: ① 수신거부·중복 검사 ② 사실 검사(금액·사례·조건이 pricing/cases와 일치하는지, 과장 제거) ③ approval_mode 적용 — 단 **견적·제안서는 auto여도 건별 승인[P]이 기본**이다. DRAFT ONLY/미설정이면 절대 자동 발송 금지, 신입·외부·타부서는 상신까지만.
 ```bash
-python3 "$CLAUDE_PLUGIN_ROOT/scripts/crm.py" suppress-check --email <받는이>
+sales-copilot crm suppress-check --email <받는이>
 ```
 Gmail 등 커넥터 연결 시 그걸로 발송하고, 미연결이면 초안을 만들어 사용자가 보낼 본문으로 넘긴다. 발송·승인 결과는 기록한다:
 ```bash
-python3 "$CLAUDE_PLUGIN_ROOT/scripts/crm.py" add activity --json '{"type":"proposal_sent","opportunity_id":"<id>","summary":"견적 v1 발송"}'
-python3 "$CLAUDE_PLUGIN_ROOT/scripts/crm.py" update opportunity <id> --json '{"stage":"proposal","next_action":"검토 확인 후속","next_action_date":"<D+3>"}'
+sales-copilot crm add activity --json '{"type":"proposal_sent","opportunity_id":"<id>","summary":"견적 v1 발송"}'
+sales-copilot crm update opportunity <id> --json '{"stage":"proposal","next_action":"검토 확인 후속","next_action_date":"<D+3>"}'
 ```
 
 ## 4. 열람·검토 추적 [A] (DEAL-07~08)
@@ -56,7 +56,7 @@ python3 "$CLAUDE_PLUGIN_ROOT/scripts/crm.py" update opportunity <id> --json '{"s
 - **수주** → 인수인계 문서 생성(고객 배경·약속한 범위·주의사항·키맨·미해결 이슈)을 [[handoff]] 형식으로 전달하고, 온보딩 확인을 next_action으로 남긴다 (DEAL-14).
 - **실주·보류** → 사유·경쟁사·가격 갭·재접촉 조건("내년 예산 시즌", "담당자 교체 시")을 저장한다. 실주는 끝이 아니라 [[revive]]의 입력이고, 사유는 [[icp]] 비적합 조건에 반영된다 (DEAL-15).
 ```bash
-python3 "$CLAUDE_PLUGIN_ROOT/scripts/crm.py" update opportunity <id> --json '{"stage":"won"}'   # 실주는 "lost" + 사유·재접촉 조건
+sales-copilot crm update opportunity <id> --json '{"stage":"won"}'   # 실주는 "lost" + 사유·재접촉 조건
 ```
 
 ## 출력

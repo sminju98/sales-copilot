@@ -13,17 +13,17 @@ description: 영업기회·파이프라인 관리 — 리드→기회 전환, �
 
 ## 0. 준비 — 파이프라인 로드
 ```bash
-python3 "$CLAUDE_PLUGIN_ROOT/scripts/crm.py" list opportunity --limit 50
-python3 "$CLAUDE_PLUGIN_ROOT/scripts/crm.py" next-missing   # 다음 행동 없는 리드·기회 = 최우선 처리
-python3 "$CLAUDE_PLUGIN_ROOT/scripts/crm.py" stats
+sales-copilot crm list opportunity --limit 50
+sales-copilot crm next-missing   # 다음 행동 없는 리드·기회 = 최우선 처리
+sales-copilot crm stats
 ```
 CRM 커넥터(HubSpot·Salesforce 등)가 연결돼 있으면 그 데이터를 우선 사용하고, 미연결이면 로컬 최소 CRM(`~/.sales-copilot/crm/opportunities.jsonl`)으로 동작한다.
 
 ## 1. 리드 → 기회 전환 (OPP-01)
 [[after-meeting]]의 전환 판단, 또는 검증된 리드(문제·예산·결재 경로 중 2개 이상 실측 확인)를 받으면 기회로 승격한다.
 ```bash
-python3 "$CLAUDE_PLUGIN_ROOT/scripts/crm.py" add opportunity --json '{"account":"A사","contact":"김OO","stage":"제안","next_action":"제안서 발송","next_action_date":"YYYY-MM-DD"}'
-python3 "$CLAUDE_PLUGIN_ROOT/scripts/crm.py" update lead <id> --json '{"status":"converted"}'
+sales-copilot crm add opportunity --json '{"account":"A사","contact":"김OO","stage":"제안","next_action":"제안서 발송","next_action_date":"YYYY-MM-DD"}'
+sales-copilot crm update lead <id> --json '{"status":"converted"}'
 ```
 
 ## 2. 기회 카드 채우기 (OPP-02~07)
@@ -51,8 +51,8 @@ python3 "$CLAUDE_PLUGIN_ROOT/scripts/crm.py" update lead <id> --json '{"status":
 ## 7. 주간 파이프라인 리뷰 (매주 1회)
 단계별 건수·금액 → 이번 주 이동(전진/후퇴/신규/종결) → 정체·방치·근거 없는 기회 → **기회별 다음 행동 1개씩 확정**의 순서로 훑는다. 리뷰가 행동 확정 없이 끝나면 실패다. 팀장·임원의 팀 전체 파이프라인 뷰·팀원별 현황 취합은 [[team]]이 담당한다.
 ```bash
-python3 "$CLAUDE_PLUGIN_ROOT/scripts/save_brief.py" --kind weekly   # 주간 파이프라인 리뷰 저장
-python3 "$CLAUDE_PLUGIN_ROOT/scripts/schedule_brief.py" --kind weekly   # 금요일 주간 영업 리포트 루틴 등록(본체는 [[metrics]] — 파이프라인 리뷰는 그 주기에 맞춰 함께 점검)
+sales-copilot save_brief --kind weekly   # 주간 파이프라인 리뷰 저장
+sales-copilot schedule_brief --kind weekly   # 금요일 주간 영업 리포트 루틴 등록(본체는 [[metrics]] — 파이프라인 리뷰는 그 주기에 맞춰 함께 점검)
 ```
 
 ## 출력

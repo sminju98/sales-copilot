@@ -13,8 +13,8 @@ description: 오늘의 행동 큐 — 오늘 연락할 사람·후속·미팅을
 
 ## 0. 준비 — CRM 로드·큐 자동 생성 (ACT-14)
 ```bash
-python3 "$CLAUDE_PLUGIN_ROOT/scripts/crm.py" stats
-python3 "$CLAUDE_PLUGIN_ROOT/scripts/queue_today.py" --build
+sales-copilot crm stats
+sales-copilot queue_today --build
 ```
 - **오늘 큐는 보통 세션 시작 훅이 이미 만들어 뒀다** — 있으면 다시 만들지 말고 바로 소진에 들어간다. 없을 때만 `--build`로 즉시 생성해 통보한다(생성 여부를 묻지 않는다).
 - `crm.py stats`로 엔티티별 건수·다음 행동 보유율·방치 리드 수를 먼저 본다. CRM이 비어 있으면 [[setup]]·[[import-cards]]·[[find-leads]]를 오늘의 행동으로 큐에 올려 둔다.
@@ -32,12 +32,12 @@ python3 "$CLAUDE_PLUGIN_ROOT/scripts/queue_today.py" --build
 
 ## 3. 방치·누락 경고 — 다음 행동 100% (ACT-08~10)
 ```bash
-python3 "$CLAUDE_PLUGIN_ROOT/scripts/crm.py" next-missing
+sales-copilot crm next-missing
 ```
 - **장기 방치 리드 재큐잉**(ACT-08): 기준일 초과 미접촉 리드를 오늘 큐에 다시 올린다. 재접촉 명분 만들기는 [[revive]]로.
 - **다음 행동 없는 리드·기회**(ACT-09·ACT-10): `next-missing` 결과를 경고로 끝내지 않는다 — 항목마다 다음 행동을 정해 **먼저 기록해 두고 통보한다**(다르게 가려면 사용자가 수정):
 ```bash
-python3 "$CLAUDE_PLUGIN_ROOT/scripts/crm.py" update lead <id> --json '{"next_action":"...","next_action_date":"YYYY-MM-DD"}'
+sales-copilot crm update lead <id> --json '{"next_action":"...","next_action_date":"YYYY-MM-DD"}'
 ```
 
 ## 4. 실행 판정 — 조사 시간 제한 (ACT-11~13)
@@ -47,15 +47,15 @@ python3 "$CLAUDE_PLUGIN_ROOT/scripts/crm.py" update lead <id> --json '{"next_act
 
 ## 5. 발송 게이트 — 승인 묶음 제시 (§7 오전 8시)
 아침 큐의 발송 항목은 묶어서 승인 가능한 목록으로 만든다. 발송 전 반드시:
-1. **수신거부·중복 검사**: `python3 "$CLAUDE_PLUGIN_ROOT/scripts/crm.py" suppress-check --email <e>` — 걸리면 즉시 제외.
+1. **수신거부·중복 검사**: `sales-copilot crm suppress-check --email <e>` — 걸리면 즉시 제외.
 2. **사실 오류 검사**: 문안의 사실(확인된 것) vs 추론(가설) 구분, 추론은 단정하지 않는 표현으로.
 3. **approval_mode 적용**: auto만 자동 발송, batch/per_item은 승인 대기, **draft_only·미설정이면 절대 자동 발송 금지.** 신입·타부서·외부는 상신([E])까지만.
 - **사용자가 미루면 사라지지 않는다** — 다음 세션·다음 큐에서 승인 가능한 발송목록을 다시 제시한다(방구석 전략맨 금지).
 
 ## 6. 저녁 마감·이월 (ACT-15, §7 오후 5시)
 ```bash
-python3 "$CLAUDE_PLUGIN_ROOT/scripts/queue_today.py"
-python3 "$CLAUDE_PLUGIN_ROOT/scripts/save_brief.py" --kind evening
+sales-copilot queue_today
+sales-copilot save_brief --kind evening
 ```
 - 오후 5시: **오늘 접촉량 / 미처리 회신 / 다음 행동 없는 리드 / 내일 우선순위** 4줄로 마감한다. 미완료 행동은 삭제하지 않고 **다음 날 큐에 재배치**(ACT-15). 다음 행동 없이 업무 종료 금지.
 - 매일 자동 실행 등록(오전 8시 빌드·오후 5시 마감)은 [[routine]]으로. 주간 행동량·전환 지표는 [[metrics]]가 본다.

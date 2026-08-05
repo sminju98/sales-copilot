@@ -13,9 +13,9 @@ description: 회사 영업 컨텍스트 구축·갱신 — 자료를 읽고 부�
 
 ## 0. 준비 — 현재 상태 진단 (§10 구조)
 ```bash
-python3 "$CLAUDE_PLUGIN_ROOT/scripts/doctor.py"
+sales-copilot doctor
 mkdir -p "${SALES_COPILOT_HOME:-$HOME/.sales-copilot}/context"
-cp -n "$CLAUDE_PLUGIN_ROOT/templates/context/"*.md "${SALES_COPILOT_HOME:-$HOME/.sales-copilot}/context/" 2>/dev/null
+cp -n "$(sales-copilot --root)/templates/context/"*.md "${SALES_COPILOT_HOME:-$HOME/.sales-copilot}/context/" 2>/dev/null
 ls "${SALES_COPILOT_HOME:-$HOME/.sales-copilot}/context/"
 ```
 - 8종: **company / products / icp / pricing / cases / objections / permissions / message-style**.md (+ `_policy.md` 데이터 경계). 골격은 templates/context/에 있고 위 `cp -n`은 기존 파일을 덮지 않는다.
@@ -23,7 +23,7 @@ ls "${SALES_COPILOT_HOME:-$HOME/.sales-copilot}/context/"
 
 ## 1. 자료 수집 (CTX-01·CTX-08)
 ```bash
-python3 "$CLAUDE_PLUGIN_ROOT/scripts/find_docs.py"
+sales-copilot find_docs
 ```
 - 로컬에서 회사소개서·제품자료·가격표·제안서·고객사례·FAQ를 찾아 읽는다(CTX-01). 노션(영업 위키·제품 문서·회의록)·구글드라이브(소개서·가격표·제안서 파일) 커넥터 연결 시 그쪽 자료를 우선하고, 미연결이면 로컬만으로 동작한다.
 - 찾은 소개서·제안서·데모·사례집은 **발송 가능한 제안자료 목록**으로 products.md에 목록화한다(CTX-08) — [[outreach]]·[[deal]]이 첨부 후보로 쓴다.
