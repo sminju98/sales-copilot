@@ -18,7 +18,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import crm  # noqa: E402
-from common import QUEUE_DIR, load_config  # noqa: E402
+from common import QUEUE_DIR, load_config, routine_guard  # noqa: E402
 
 WEEKDAY_KO = ["월", "화", "수", "목", "금", "토", "일"]
 ID_PAT = re.compile(r"\b(?:ac|ct|rl|ld|av|op)-\d{4,}\b")
@@ -208,6 +208,7 @@ def build(date):
 
 
 def main():
+    routine_guard()   # 예약인데 설정이 덜 됐으면 조용히 끝낸다(오류 아님)
     p = argparse.ArgumentParser(description="오늘의 행동 큐 생성/조회")
     p.add_argument("--build", action="store_true", help="생성/갱신(완료 체크는 보존)")
     p.add_argument("--date", default=None, metavar="YYYY-MM-DD")
